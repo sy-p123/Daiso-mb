@@ -64,6 +64,7 @@ if (typeof html2canvas === 'undefined') {
   .period-calc{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:6px;line-height:1.6;white-space:pre-line;}
   .period-amount{font-family:var(--mono);font-size:18px;font-weight:600;}
   .before .period-amount{color:var(--before);}.after .period-amount{color:var(--after);}
+  .vat-note{font-family:'Noto Sans KR',sans-serif;font-size:11px;font-weight:400;color:var(--ink-soft);margin-left:4px;}
   .daily-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;}
   .daily-table th{background:var(--bg);color:var(--ink-soft);font-weight:600;padding:7px 11px;text-align:left;border-bottom:1px solid var(--rule);}
   .daily-table td{padding:9px 11px;border-bottom:1px solid var(--rule);font-family:var(--mono);}
@@ -113,16 +114,20 @@ if (typeof html2canvas === 'undefined') {
   .mode-btn:not(.active):hover{border-color:var(--accent-mid);color:var(--accent-mid);}
   .mode-hint{font-size:11px;color:var(--accent-mid);background:var(--accent-light);border-radius:6px;padding:5px 11px;margin-top:8px;line-height:1.5;display:none;}
   .mode-hint.visible{display:block;}
-  /* 금액 명세 (공급가/부가세/합계) */
-  .invoice-box{background:var(--ink);border-radius:11px;overflow:hidden;margin-bottom:14px;}
-  .invoice-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 20px;}
-  .invoice-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.12);}
-  .invoice-key{font-size:13px;font-weight:600;color:rgba(255,255,255,.8);line-height:1.4;}
-  .invoice-key small{display:block;font-size:11px;color:rgba(255,255,255,.5);font-weight:400;margin-top:2px;}
-  .invoice-month{font-family:var(--mono);font-size:18px;font-weight:700;color:#c4baff;letter-spacing:-.3px;flex-shrink:0;}
-  .invoice-val{font-family:var(--mono);font-size:15px;font-weight:600;color:rgba(255,255,255,.92);flex-shrink:0;}
-  .invoice-total-row{background:rgba(255,255,255,.06);}
-  .invoice-amount{font-family:var(--mono);font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px;flex-shrink:0;}
+  /* 금액 명세 (공급가/부가세/합계) - 밝은 테마, 세로 행 */
+  .invoice-box{background:var(--accent-light);border:1px solid #d6cffb;border-radius:12px;overflow:hidden;margin-bottom:14px;}
+  .invoice-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 18px;background:#e2dcfa;border-bottom:1px solid #d6cffb;}
+  .invoice-mlabel{font-size:13px;font-weight:600;color:var(--accent);line-height:1.4;}
+  .invoice-mlabel small{display:block;font-size:11px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
+  .invoice-month{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);letter-spacing:-.3px;flex-shrink:0;}
+  .invoice-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 18px;}
+  .invoice-row:not(:last-child){border-bottom:1px solid #d6cffb;}
+  .invoice-key{font-size:13px;font-weight:600;color:var(--ink-soft);line-height:1.4;}
+  .invoice-key small{display:block;font-size:11px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
+  .invoice-val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);flex-shrink:0;letter-spacing:-.3px;}
+  .invoice-total-row{background:#fff;}
+  .invoice-total-row .invoice-key{color:var(--accent);}
+  .invoice-amount{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-.5px;flex-shrink:0;}
   /* 선불/후불 */
   .pay-group{display:flex;gap:6px;}
   .pay-btn{flex:1;padding:8px 0;border:1.5px solid var(--rule);border-radius:7px;background:var(--bg);color:var(--ink-soft);font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;text-align:center;}
@@ -391,8 +396,8 @@ if (typeof html2canvas === 'undefined') {
 
       <!-- 금액 명세: 공급가/부가세/합계 -->
       <div class="invoice-box">
-        <div class="invoice-row" id="n-invoice-month-row">
-          <div class="invoice-key" id="n-issuebanner-label">세금계산서 발행월</div>
+        <div class="invoice-month-row" id="n-invoice-month-row">
+          <div class="invoice-mlabel" id="n-issuebanner-label">세금계산서 발행월</div>
           <div class="invoice-month" id="n-issuemonth-display"></div>
         </div>
         <div class="invoice-row">
@@ -636,10 +641,10 @@ function calculate(){
   document.getElementById('rtag-after').textContent=labelA;
   document.getElementById('beforeDates').textContent=`${psStr} ~ ${bdEndStr} (${bd}일)`;
   document.getElementById('beforeCalc').textContent=`${fmt(rb)} ÷ ${total}일 × ${bd}일`;
-  document.getElementById('beforeAmt').textContent=fmt(ab);
+  document.getElementById('beforeAmt').innerHTML=fmt(ab)+'<span class="vat-note">(VAT 별도)</span>';
   document.getElementById('afterDates').textContent=`${cdStr} ~ ${peStr} (${ad}일)`;
   document.getElementById('afterCalc').textContent=`${fmt(ra)} ÷ ${total}일 × ${ad}일`;
-  document.getElementById('afterAmt').textContent=fmt(aa);
+  document.getElementById('afterAmt').innerHTML=fmt(aa)+'<span class="vat-note">(VAT 별도)</span>';
 
   document.getElementById('dailyBody').innerHTML = isT
     ? `<tr><td><span class="tag-a">월 임대료</span></td><td>${fmt(rb)}</td><td>${total}일</td><td><strong>${fmt(dpbR).replace('원','원/일')}</strong></td></tr>`
@@ -750,10 +755,10 @@ function renderChangeNotice(){
   document.getElementById('ntag-after').textContent='변경 후';
   document.getElementById('n-bdates').textContent=`${d.old.dates} (${d.bd}일)`;
   document.getElementById('n-bcalc').textContent=`${fmt(d.rb)} ÷ ${d.total}일 × ${d.bd}일\n= ${fmt(d.dpbR).replace('원','원/일')} × ${d.bd}일`;
-  document.getElementById('n-bamt').textContent=fmt(d.old.supply);
+  document.getElementById('n-bamt').innerHTML=fmt(d.old.supply)+'<span class="vat-note">(VAT 별도)</span>';
   document.getElementById('n-adates').textContent=`${d.new.dates} (${d.ad}일)`;
   document.getElementById('n-acalc').textContent=`${fmt(d.ra)} ÷ ${d.total}일 × ${d.ad}일\n= ${fmt(d.dpaR).replace('원','원/일')} × ${d.ad}일`;
-  document.getElementById('n-aamt').textContent=fmt(d.new.supply);
+  document.getElementById('n-aamt').innerHTML=fmt(d.new.supply)+'<span class="vat-note">(VAT 별도)</span>';
 
   // 금액: 변경모드는 변경 전+후 공급가 합산
   const supply=d.old.supply+d.new.supply;
@@ -812,7 +817,7 @@ function renderTransferNotice(){
   document.getElementById('n-single-tag').textContent=`${partyName} 정산분`;
   document.getElementById('n-single-dates').textContent=`${party.dates} (${party.days}일)`;
   document.getElementById('n-single-calc').textContent=`${fmt(party.rent)} ÷ ${d.total}일 × ${party.days}일\n= ${fmt(party.dpR).replace('원','원/일')} × ${party.days}일`;
-  document.getElementById('n-single-amt').textContent=fmt(party.supply);
+  document.getElementById('n-single-amt').innerHTML=fmt(party.supply)+'<span class="vat-note">(VAT 별도)</span>';
 
   fillInvoice(party.supply, party.vat, party.tot);
 
