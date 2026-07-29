@@ -669,12 +669,13 @@ if (typeof html2canvas === 'undefined') {
         </div>
       </div>
 
-      <div class="period-box after" style="border-left-color:var(--accent);background:var(--accent-light);margin-bottom:14px;">
-        <div class="period-tag" style="color:var(--accent);">미지급 임차료 인상분 소급</div>
-        <div class="period-dates" id="r-n-period"></div>
-        <div class="period-calc" id="r-n-calc"></div>
-        <div class="period-amount" id="r-n-amt" style="color:var(--accent);"></div>
-      </div>
+      <!-- 구간별 소급 상세 -->
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">미지급 임차료 인상분 소급 내역</div>
+      <table class="daily-table retro-table" style="margin-bottom:8px;">
+        <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
+        <tbody id="r-n-monthBody"></tbody>
+      </table>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:14px;text-align:right;" id="r-n-calc"></div>
 
       <div class="invoice-box">
         <div class="invoice-month-row">
@@ -790,20 +791,51 @@ function calcRetro(){
     const lastv=document.getElementById('r-lastMonth').value;
     if(!endv) return rse('기존 계약 종료일을 입력해 주세요.');
     if(!lastv) return rse('소급 종료 월을 선택해 주세요.');
-    const [ey,em]=endv.split('-').map(Number);
-    let sy=ey, sm=em+1; if(sm>12){sm=1;sy++;}
+    const [ey,em,ed]=endv.split('-').map(Number);
+    const endLast=dim(ey,em); // 종료월의 말일
     const [ly,lm]=lastv.split('-').map(Number);
-    const startN=sy*100+sm, lastN=ly*100+lm;
+    const diffM=ra-rb;
+
+    // 소급 시작: 종료일 다음날
+    let firstY, firstM_, firstD;
+    if(ed>=endLast){
+      // 종료일이 말일 → 다음달 1일부터 온전한 월
+      firstY=ey; firstM_=em+1; if(firstM_>12){firstM_=1;firstY++;} firstD=1;
+    }else{
+      // 부분월 → 종료일 다음날부터 그 달 말일까지 일할
+      firstY=ey; firstM_=em; firstD=ed+1;
+    }
+
+    const startN=firstY*100+firstM_, lastN=ly*100+lm;
     if(lastN<startN) return rse('소급 종료 월이 소급 시작 월보다 빠릅니다. 날짜를 확인해 주세요.');
-    let cy=sy, cm=sm;
+
+    let cy=firstY, cm=firstM_;
+    let isFirst=true;
     while(cy*100+cm<=lastN){
       const last=dim(cy,cm);
-      months.push({label:`${ds(cy,cm,1)}~${ds(cy,cm,last)}`, sub:`${cy}년 ${cm}월`});
+      if(isFirst && firstD>1){
+        // 첫 달 일할 (부분월)
+        const days=last-firstD+1;
+        const amt=Math.round((diffM/last)*days);
+        months.push({
+          label:`${ds(cy,cm,firstD)}~${ds(cy,cm,last)}`,
+          sub:`${cy}년 ${cm}월 (일할 ${days}일)`,
+          amt, partial:true, days, base:last
+        });
+      }else{
+        // 온전한 월
+        months.push({
+          label:`${ds(cy,cm,1)}~${ds(cy,cm,last)}`,
+          sub:`${cy}년 ${cm}월`,
+          amt:diffM, partial:false
+        });
+      }
+      isFirst=false;
       cm++; if(cm>12){cm=1;cy++;}
       if(months.length>240) break;
     }
     if(months.length===0) return rse('소급 기간을 확인해 주세요.');
-    periodStr = months.length===1 ? months[0].sub : `${months[0].sub} ~ ${months[months.length-1].sub}`;
+    periodStr = months.length===1 ? months[0].sub.replace(/ \(일할.*\)/,'') : `${months[0].label.split('~')[0]} ~ ${months[months.length-1].label.split('~')[1]}`;
   }else{
     // 특정일~익월 전날: 시작일부터 한 달씩 구간 생성
     const s2=document.getElementById('r-startDate2').value;
@@ -826,7 +858,8 @@ function calcRetro(){
       const ce2={y:cEnd.getFullYear(),m:cEnd.getMonth()+1,d:cEnd.getDate()};
       months.push({
         label:`${ds(cs.y,cs.m,cs.d)}~${ds(ce2.y,ce2.m,ce2.d)}`,
-        sub:`${ds(cs.y,cs.m,cs.d)} ~ ${ds(ce2.y,ce2.m,ce2.d)}`
+        sub:`${ds(cs.y,cs.m,cs.d)} ~ ${ds(ce2.y,ce2.m,ce2.d)}`,
+        amt:ra-rb, partial:false
       });
       curStart=new Date(nextSame);
     }
@@ -836,7 +869,7 @@ function calcRetro(){
 
   const diff=ra-rb;
   const monthCount=months.length;
-  const supply=diff*monthCount;
+  const supply=months.reduce((s,mo)=>s+mo.amt,0);
   const vat=Math.round(supply*0.1);
   const tot=supply+vat;
 
@@ -844,16 +877,21 @@ function calcRetro(){
   const issueStr=ds(ccy,ccm,ccd);
 
   // ── 결과 화면
+  const hasPartial=months.some(m=>m.partial);
+  const countLabel = hasPartial ? `${monthCount}개 구간` : `총 ${monthCount}개월`;
   document.getElementById('r-metachips').innerHTML=
     `<span class="meta-chip">소급 기간 ${periodStr}</span>
-     <span class="meta-chip">총 ${monthCount}개월</span>
+     <span class="meta-chip">${countLabel}</span>
      <span class="meta-chip">작성일 ${issueStr}</span>`;
   document.getElementById('r-diffCalc').textContent=`인상 후 ${fmt(ra)} − 기존 ${fmt(rb)}`;
   document.getElementById('r-diffAmt').innerHTML=fmt(diff)+'<span class="vat-note">(VAT 별도)</span>';
 
   let rows='';
   months.forEach(mo=>{
-    rows+=`<tr><td style="white-space:nowrap;">${mo.label}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(diff)}</strong></td></tr>`;
+    const note = mo.partial
+      ? `<div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">일할 ${fmt(diff)}÷${mo.base}일×${mo.days}일</div>`
+      : '';
+    rows+=`<tr><td style="white-space:nowrap;">${mo.label}${note}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(mo.amt)}</strong></td></tr>`;
   });
   document.getElementById('r-monthBody').innerHTML=rows;
   document.getElementById('r-totalAmt').textContent=fmt(supply);
@@ -862,7 +900,7 @@ function calcRetro(){
   document.getElementById('r-result').style.display='block';
   document.getElementById('r-result').scrollIntoView({behavior:'smooth',block:'start'});
 
-  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr};
+  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr,hasPartial,countLabel,months};
 
   // ── 안내문
   document.getElementById('r-noticeEmpty').style.display='none';
@@ -870,20 +908,32 @@ function calcRetro(){
   document.getElementById('r-n-store').textContent=store?`［ ${store} ］`:'';
   document.getElementById('r-n-metachips').innerHTML=
     `<span class="meta-chip">소급 기간 ${periodStr}</span>
-     <span class="meta-chip">총 ${monthCount}개월</span>`;
+     <span class="meta-chip">${countLabel}</span>`;
   document.getElementById('r-n-rentBefore').textContent=fmt(rb);
   document.getElementById('r-n-rentAfter').textContent=fmt(ra);
-  document.getElementById('r-n-period').textContent=`${periodStr} (${monthCount}개월분)`;
-  document.getElementById('r-n-calc').textContent=`월 인상액 ${fmt(diff)} × ${monthCount}개월`;
-  document.getElementById('r-n-amt').innerHTML=fmt(supply)+'<span class="vat-note">(VAT 별도)</span>';
+  // 구간별 소급 내역 테이블
+  let nrows='';
+  months.forEach(mo=>{
+    const note = mo.partial
+      ? `<div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">일할 ${fmt(diff)}÷${mo.base}일×${mo.days}일</div>`
+      : '';
+    nrows+=`<tr><td style="white-space:nowrap;">${mo.label}${note}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(mo.amt)}</strong></td></tr>`;
+  });
+  document.getElementById('r-n-monthBody').innerHTML=nrows;
+  document.getElementById('r-n-calc').textContent = hasPartial
+    ? `월 인상액 ${fmt(diff)} 기준 · 부분월은 일수 비례 정산`
+    : `월 인상액 ${fmt(diff)} × ${monthCount}개월`;
   document.getElementById('r-n-issue').textContent=issueStr;
   document.getElementById('r-n-supply').textContent=fmt(supply);
   document.getElementById('r-n-vat').textContent=fmt(vat);
   document.getElementById('r-n-total').textContent=fmt(tot);
   document.getElementById('r-n-refrow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
   document.getElementById('r-n-footer').textContent=bas?`근거자료: ${bas}`:'';
+  const p1txt = hasPartial
+    ? `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 기간의 <strong>임차료 인상분</strong>을 소급 정산한 금액입니다. (계약 종료일이 월 중간인 경우 해당 월은 일수 비례로 계산)`
+    : `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 임차료 인상분</strong>을 소급 정산한 금액입니다.`;
   document.getElementById('r-n-points').innerHTML=`
-    <div class="notice-point"><span class="pt-num">1</span><span>변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 임차료 인상분</strong>을 소급 정산한 금액입니다.</span></div>
+    <div class="notice-point"><span class="pt-num">1</span><span>${p1txt}</span></div>
     <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
     <div class="notice-point"><span class="pt-num">3</span><span>세금계산서 발행일은 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
 }
