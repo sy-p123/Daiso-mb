@@ -69,12 +69,21 @@ if (typeof html2canvas === 'undefined') {
   .daily-table th{background:var(--bg);color:var(--ink-soft);font-weight:600;padding:7px 11px;text-align:left;border-bottom:1px solid var(--rule);}
   .daily-table td{padding:9px 11px;border-bottom:1px solid var(--rule);font-family:var(--mono);}
   .daily-table tr:last-child td{border-bottom:none;}
+  @media(max-width:420px){.retro-table th,.retro-table td{padding:8px 7px;font-size:11px;}}
+  /* 소급 안내문: 인상 전후 미니 리스트 */
+  .rent-mini{background:var(--bg);border:1px solid var(--rule);border-radius:9px;overflow:hidden;margin-bottom:14px;}
+  .rent-mini .rm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 15px;font-size:13px;gap:12px;}
+  .rent-mini .rm-row:first-child{border-bottom:1px solid var(--rule);}
+  .rent-mini .rm-k{color:var(--ink-soft);}
+  .rent-mini .rm-vb{font-family:var(--mono);color:var(--before);font-weight:600;white-space:nowrap;}
+  .rent-mini .rm-va{font-family:var(--mono);color:var(--after);font-weight:700;white-space:nowrap;}
+  .rent-mini .vat-note{color:var(--ink-soft);}
   .tag-b{display:inline-block;background:var(--before-bg);color:var(--before);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;font-family:'Noto Sans KR',sans-serif;}
   .tag-a{display:inline-block;background:var(--after-bg);color:var(--after);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;font-family:'Noto Sans KR',sans-serif;}
   .divider{height:1px;background:var(--rule);margin:14px 0;}
-  .total-row{display:flex;justify-content:space-between;align-items:center;padding:13px 17px;background:var(--ink);color:#fff;border-radius:10px;}
+  .total-row{display:flex;justify-content:space-between;align-items:center;padding:13px 17px;background:var(--ink);color:#fff;border-radius:10px;gap:12px;}
   .total-label{font-size:13px;font-weight:500;opacity:.85;}
-  .total-amount{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.5px;}
+  .total-amount{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.5px;white-space:nowrap;flex-shrink:0;}
   .ref-row{margin-top:11px;padding:9px 13px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--ink-soft);}
   .ref-row span{color:var(--ink);font-weight:500;}
   .cal-grid-wrap{margin-top:11px;}
@@ -185,6 +194,15 @@ if (typeof html2canvas === 'undefined') {
     </div>
     <div class="sc-arrow">→</div>
   </div>
+
+  <div class="start-card" onclick="enterRetro()">
+    <div class="sc-icon">⏱️</div>
+    <div class="sc-body">
+      <h3>임차료 인상 소급 일할계산</h3>
+      <p>변경계약서 접수가 늦어져 기존 금액으로 지급한 기간의 미지급 인상분을 소급 정산합니다.</p>
+    </div>
+    <div class="sc-arrow">→</div>
+  </div>
 </div>
 </div>
 
@@ -278,6 +296,61 @@ if (typeof html2canvas === 'undefined') {
     </div>
   </div>
 
+  <!-- 고정관리비 (선택) -->
+  <div class="card" id="mgmt-card">
+    <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>고정관리비 <span style="color:var(--ink-soft);font-weight:500;letter-spacing:0;text-transform:none;font-size:11px;">(선택)</span></span>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:2px;">
+      <input type="checkbox" id="mgmt-toggle" onchange="toggleMgmt()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+      이 계약에 고정관리비가 있습니다
+    </label>
+
+    <div id="mgmt-body" style="display:none;margin-top:16px;">
+      <div class="field" style="margin-bottom:14px;">
+        <label>관리비 변동 여부</label>
+        <div class="mode-group">
+          <button class="mode-btn active" id="mgmt-vary-none" onclick="setMgmtVary(false)">계약기간 내 변동 없음</button>
+          <button class="mode-btn" id="mgmt-vary-yes" onclick="setMgmtVary(true)">변동 있음</button>
+        </div>
+      </div>
+
+      <!-- 변동 없음: 한 칸 -->
+      <div id="mgmt-fixed" class="field" style="margin-bottom:0;">
+        <label>월 고정관리비 (부가세 별도)</label>
+        <div class="won-wrap">
+          <input type="number" id="mgmtFlat" placeholder="0" min="0" oninput="updateKor('mgmtFlat','korMgmtFlat')">
+          <span class="kor-amount" id="korMgmtFlat"></span>
+        </div>
+      </div>
+
+      <!-- 변동 있음: 변경일 + 기존/변경 -->
+      <div id="mgmt-varying" style="display:none;">
+        <div class="field" style="margin-bottom:13px;">
+          <label id="label-mgmtChangeDate">관리비 변경일</label>
+          <input type="date" id="mgmtChangeDate">
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">임대료 변경일과 달라도 됩니다. 같은 기산 기간 안에서 관리비만 별도로 나뉩니다.</div>
+        </div>
+        <div class="field-grid two" style="margin-bottom:0;">
+          <div class="field">
+            <label>기존 관리비 (월·부가세 별도)</label>
+            <div class="won-wrap">
+              <input type="number" id="mgmtBefore" placeholder="0" min="0" oninput="updateKor('mgmtBefore','korMgmtBefore')">
+              <span class="kor-amount" id="korMgmtBefore"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label>변경 관리비 (월·부가세 별도)</label>
+            <div class="won-wrap">
+              <input type="number" id="mgmtAfter" placeholder="0" min="0" oninput="updateKor('mgmtAfter','korMgmtAfter')">
+              <span class="kor-amount" id="korMgmtAfter"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 발행월 (변경 모드 전용) -->
   <div class="card" id="issuemonth-wrap">
     <div class="section-label">세금계산서 발행월 <span style="color:var(--ink-soft);font-weight:500;letter-spacing:0;text-transform:none;font-size:11px;">(선택)</span></div>
@@ -318,6 +391,8 @@ if (typeof html2canvas === 'undefined') {
       </thead>
       <tbody id="dailyBody"></tbody>
     </table>
+
+    <div id="mgmt-result" style="display:none;"></div>
 
     <div class="total-row">
       <span class="total-label" id="totalLabel">합계 (공급가액)</span>
@@ -394,6 +469,9 @@ if (typeof html2canvas === 'undefined') {
         </div>
       </div>
 
+      <!-- 관리비 표시 (변경 모드) -->
+      <div id="n-mgmt-box" style="margin-bottom:14px;display:none;"></div>
+
       <!-- 금액 명세: 공급가/부가세/합계 -->
       <div class="invoice-box">
         <div class="invoice-month-row" id="n-invoice-month-row">
@@ -434,6 +512,208 @@ if (typeof html2canvas === 'undefined') {
 </div>
 </div>
 
+<!-- ===================== 소급 계산 화면 ===================== -->
+<div class="page" id="page-retro">
+<div class="tab-bar">
+  <button class="tab-btn active" id="rtab-calc" onclick="switchRetroTab('calc',this)">📋  소급 일할계산</button>
+  <button class="tab-btn" id="rtab-notice" onclick="switchRetroTab('notice',this)">📄  세금계산서 발행 안내</button>
+</div>
+
+<!-- ── 소급 입력 탭 ── -->
+<div class="container" id="rsub-calc">
+  <button class="back-link" onclick="goStart()">← 계산 유형 다시 선택</button>
+  <div class="header">
+    <div class="header-eyebrow">Lease Management Tool</div>
+    <h1>임차료 인상 소급 일할계산</h1>
+    <div class="header-sub">변경계약서 접수 지연으로 미지급된 인상분을 월 단위로 소급 정산합니다</div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">기본 정보</div>
+    <div class="field-grid two">
+      <div class="field">
+        <label>매장명</label>
+        <input type="text" id="r-storeName" placeholder="예) ○○점">
+      </div>
+      <div class="field">
+        <label>근거자료</label>
+        <input type="text" id="r-basis" placeholder="예) 임대차 변경계약서">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">소급 기간</div>
+
+    <div class="field" style="margin-bottom:16px;">
+      <label>기산일 유형</label>
+      <div class="mode-group">
+        <button class="mode-btn active" id="r-mode-1" onclick="setRetroMode(1)">매월 1일 ~ 말일</button>
+        <button class="mode-btn" id="r-mode-2" onclick="setRetroMode(2)">특정일 ~ 익월 전날</button>
+      </div>
+    </div>
+
+    <!-- 모드1: 계약 종료일 + 소급 종료 월 -->
+    <div id="r-fields-1" class="field-grid two">
+      <div class="field">
+        <label>기존 계약 종료일</label>
+        <input type="date" id="r-endDate">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">이 날짜 다음 달 1일부터 소급이 시작됩니다.</div>
+      </div>
+      <div class="field">
+        <label>소급 종료 월 (마지막 지급 월)</label>
+        <input type="month" id="r-lastMonth">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">기존 금액으로 지급한 마지막 달을 선택하세요.</div>
+      </div>
+    </div>
+
+    <!-- 모드2: 소급 시작일 + 소급 종료일 -->
+    <div id="r-fields-2" class="field-grid two" style="display:none;">
+      <div class="field">
+        <label>소급 시작일 (첫 기산 시작일)</label>
+        <input type="date" id="r-startDate2">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">예) 15일 시작이면 15일~익월 14일이 1개월입니다.</div>
+      </div>
+      <div class="field">
+        <label>소급 종료일 (마지막 기산 종료일)</label>
+        <input type="date" id="r-endDate2">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">기존 금액으로 지급한 마지막 기산 구간의 종료일입니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">임대료 정보</div>
+    <div class="field-grid two">
+      <div class="field">
+        <label>기존 임대료 (월·부가세 별도)</label>
+        <div class="won-wrap">
+          <input type="number" id="r-rentBefore" placeholder="0" min="0" oninput="updateKor('r-rentBefore','r-korBefore')">
+          <span class="kor-amount" id="r-korBefore"></span>
+        </div>
+      </div>
+      <div class="field">
+        <label>인상 후 임대료 (월·부가세 별도)</label>
+        <div class="won-wrap">
+          <input type="number" id="r-rentAfter" placeholder="0" min="0" oninput="updateKor('r-rentAfter','r-korAfter')">
+          <span class="kor-amount" id="r-korAfter"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">변경계약서 작성일</div>
+    <div class="field">
+      <label>변경계약서 작성일 (세금계산서 발행일)</label>
+      <input type="date" id="r-contractDate">
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">세금계산서는 반드시 이 날짜로 발행받아야 합니다.</div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calcRetro()">소급 일할계산 실행</button>
+  <div class="error-msg" id="r-errMsg"></div>
+
+  <div class="card result-box" id="r-result" style="margin-top:20px;">
+    <div class="section-label">산출 결과</div>
+    <div class="result-meta" id="r-metachips"></div>
+
+    <div class="period-box after" style="border-left-color:var(--accent);background:var(--accent-light);margin-bottom:14px;">
+      <div class="period-tag" style="color:var(--accent);">월 인상액 (차액)</div>
+      <div class="period-calc" id="r-diffCalc" style="color:var(--ink-soft);"></div>
+      <div class="period-amount" id="r-diffAmt" style="color:var(--accent);"></div>
+    </div>
+
+    <table class="daily-table retro-table">
+      <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
+      <tbody id="r-monthBody"></tbody>
+    </table>
+
+    <div class="total-row">
+      <span class="total-label">소급 인상분 합계 (공급가액)</span>
+      <span class="total-amount" id="r-totalAmt"></span>
+    </div>
+    <div class="ref-row" id="r-refRow"></div>
+  </div>
+</div>
+
+<!-- ── 소급 안내 탭 ── -->
+<div class="container notice-wrap" id="rsub-notice" style="display:none;">
+  <button class="back-link" onclick="goStart()">← 계산 유형 다시 선택</button>
+
+  <div id="r-noticeEmpty" class="notice-empty">
+    <div class="ei">📋</div>
+    <div>먼저 소급 일할계산을 실행해 주세요.<br>결과가 여기에 자동으로 반영됩니다.</div>
+    <button class="go-btn" onclick="switchRetroTab('calc', document.getElementById('rtab-calc'))">소급 계산 바로가기</button>
+  </div>
+
+  <div id="r-noticeContent" style="display:none;">
+    <div class="notice-sheet" id="r-captureArea">
+      <div class="notice-header">
+        <div class="eyebrow">Tax Invoice Guide</div>
+        <h2>세금계산서 발행 안내</h2>
+        <div class="n-store" id="r-n-store"></div>
+      </div>
+
+      <div class="result-meta" id="r-n-metachips" style="margin-bottom:14px;"></div>
+
+      <!-- 인상 전·후 임대료 (미니 리스트) -->
+      <div class="rent-mini">
+        <div class="rm-row">
+          <span class="rm-k">인상 전 임대료 (월)</span>
+          <span class="rm-vb" id="r-n-rentBefore"></span>
+        </div>
+        <div class="rm-row">
+          <span class="rm-k">인상 후 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
+          <span class="rm-va" id="r-n-rentAfter"></span>
+        </div>
+      </div>
+
+      <div class="period-box after" style="border-left-color:var(--accent);background:var(--accent-light);margin-bottom:14px;">
+        <div class="period-tag" style="color:var(--accent);">미지급 임차료 인상분 소급</div>
+        <div class="period-dates" id="r-n-period"></div>
+        <div class="period-calc" id="r-n-calc"></div>
+        <div class="period-amount" id="r-n-amt" style="color:var(--accent);"></div>
+      </div>
+
+      <div class="invoice-box">
+        <div class="invoice-month-row">
+          <div class="invoice-mlabel">세금계산서 발행일<small>변경계약서 작성일과 동일하게 발행</small></div>
+          <div class="invoice-month" id="r-n-issue"></div>
+        </div>
+        <div class="invoice-row">
+          <div class="invoice-key">공급가액</div>
+          <div class="invoice-val" id="r-n-supply"></div>
+        </div>
+        <div class="invoice-row">
+          <div class="invoice-key">부가세액 (10%)</div>
+          <div class="invoice-val" id="r-n-vat"></div>
+        </div>
+        <div class="invoice-row invoice-total-row">
+          <div class="invoice-key">합계 금액<small>공급가액 + 부가세</small></div>
+          <div class="invoice-amount" id="r-n-total"></div>
+        </div>
+      </div>
+
+      <div class="ref-row" id="r-n-refrow" style="margin-bottom:14px;"></div>
+
+      <div class="notice-card">
+        <div class="nc-label">발행 시 유의사항</div>
+        <div id="r-n-points"></div>
+      </div>
+
+      <div class="notice-footer" id="r-n-footer"></div>
+    </div>
+
+    <div class="action-bar">
+      <button class="action-btn save" onclick="saveRetroImage()">🖼️ 이미지 저장</button>
+      <button class="action-btn share" onclick="shareRetroImage()">📤 바로 공유</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:8px;line-height:1.5;" id="r-share-hint">‘바로 공유’는 저장 없이 문자·메신저로 전달할 수 있어요. (모바일 권장)</div>
+  </div>
+</div>
+</div>
+
 <script>
 // ===== 계산 유형 =====
 let calcType = 'change'; // 'change' | 'transfer'
@@ -453,8 +733,190 @@ function enterMode(type) {
 
 function goStart() {
   document.getElementById('page-main').classList.remove('active');
+  document.getElementById('page-retro').classList.remove('active');
   document.getElementById('page-start').classList.add('active');
   window.scrollTo(0,0);
+}
+
+// ===== 소급 계산 =====
+let retroData=null;
+let retroMode=1;
+function setRetroMode(m){
+  retroMode=m;
+  document.getElementById('r-mode-1').classList.toggle('active',m===1);
+  document.getElementById('r-mode-2').classList.toggle('active',m===2);
+  document.getElementById('r-fields-1').style.display=m===1?'':'none';
+  document.getElementById('r-fields-2').style.display=m===2?'':'none';
+}
+function enterRetro(){
+  document.getElementById('page-start').classList.remove('active');
+  document.getElementById('page-retro').classList.add('active');
+  switchRetroTab('calc', document.getElementById('rtab-calc'));
+  document.getElementById('r-result').style.display='none';
+  document.getElementById('r-noticeEmpty').style.display='';
+  document.getElementById('r-noticeContent').style.display='none';
+  window.scrollTo(0,0);
+}
+function switchRetroTab(tab,btn){
+  document.querySelectorAll('#page-retro .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('rsub-calc').style.display   = tab==='calc' ? '' : 'none';
+  document.getElementById('rsub-notice').style.display = tab==='notice' ? '' : 'none';
+  window.scrollTo(0,0);
+}
+function rse(msg){const e=document.getElementById('r-errMsg');e.textContent=msg;e.style.display='block';document.getElementById('r-result').style.display='none';}
+function rce(){document.getElementById('r-errMsg').style.display='none';}
+
+function calcRetro(){
+  rce();
+  const store=document.getElementById('r-storeName').value.trim();
+  const bas=document.getElementById('r-basis').value.trim();
+  const rb=parseFloat(document.getElementById('r-rentBefore').value);
+  const ra=parseFloat(document.getElementById('r-rentAfter').value);
+  const cdv=document.getElementById('r-contractDate').value;
+
+  if(isNaN(rb)||rb<0) return rse('기존 임대료를 올바르게 입력해 주세요.');
+  if(isNaN(ra)||ra<0) return rse('인상 후 임대료를 올바르게 입력해 주세요.');
+  if(ra<=rb) return rse('인상 후 임대료가 기존 임대료보다 커야 합니다.');
+  if(!cdv) return rse('변경계약서 작성일을 입력해 주세요.');
+
+  // months: [{label, sub}] label=칩/테이블 표기, sub=구간 상세
+  const months=[];
+  let periodStr='';
+
+  if(retroMode===1){
+    // 매월 1일~말일
+    const endv=document.getElementById('r-endDate').value;
+    const lastv=document.getElementById('r-lastMonth').value;
+    if(!endv) return rse('기존 계약 종료일을 입력해 주세요.');
+    if(!lastv) return rse('소급 종료 월을 선택해 주세요.');
+    const [ey,em]=endv.split('-').map(Number);
+    let sy=ey, sm=em+1; if(sm>12){sm=1;sy++;}
+    const [ly,lm]=lastv.split('-').map(Number);
+    const startN=sy*100+sm, lastN=ly*100+lm;
+    if(lastN<startN) return rse('소급 종료 월이 소급 시작 월보다 빠릅니다. 날짜를 확인해 주세요.');
+    let cy=sy, cm=sm;
+    while(cy*100+cm<=lastN){
+      const last=dim(cy,cm);
+      months.push({label:`${ds(cy,cm,1)}~${ds(cy,cm,last)}`, sub:`${cy}년 ${cm}월`});
+      cm++; if(cm>12){cm=1;cy++;}
+      if(months.length>240) break;
+    }
+    if(months.length===0) return rse('소급 기간을 확인해 주세요.');
+    periodStr = months.length===1 ? months[0].sub : `${months[0].sub} ~ ${months[months.length-1].sub}`;
+  }else{
+    // 특정일~익월 전날: 시작일부터 한 달씩 구간 생성
+    const s2=document.getElementById('r-startDate2').value;
+    const e2=document.getElementById('r-endDate2').value;
+    if(!s2) return rse('소급 시작일을 입력해 주세요.');
+    if(!e2) return rse('소급 종료일을 입력해 주세요.');
+    const [sy,sm,sd]=s2.split('-').map(Number);
+    const [ey2,em2,ed2]=e2.split('-').map(Number);
+    const startDate=new Date(sy,sm-1,sd);
+    const endDate=new Date(ey2,em2-1,ed2);
+    if(endDate<startDate) return rse('소급 종료일이 시작일보다 빠릅니다. 날짜를 확인해 주세요.');
+    // 각 구간: [curStart, 다음달 같은날-1]
+    let curStart=new Date(startDate);
+    let guard=0;
+    while(curStart<=endDate && guard<240){
+      guard++;
+      const cs={y:curStart.getFullYear(),m:curStart.getMonth()+1,d:curStart.getDate()};
+      const nextSame=new Date(cs.y,cs.m,cs.d); // 다음달 같은 날
+      const cEnd=new Date(nextSame.getTime()-86400000); // 익월 전날
+      const ce2={y:cEnd.getFullYear(),m:cEnd.getMonth()+1,d:cEnd.getDate()};
+      months.push({
+        label:`${ds(cs.y,cs.m,cs.d)}~${ds(ce2.y,ce2.m,ce2.d)}`,
+        sub:`${ds(cs.y,cs.m,cs.d)} ~ ${ds(ce2.y,ce2.m,ce2.d)}`
+      });
+      curStart=new Date(nextSame);
+    }
+    if(months.length===0) return rse('소급 기간을 확인해 주세요.');
+    periodStr = months.length===1 ? months[0].sub : `${months[0].sub.split(' ~ ')[0]} ~ ${months[months.length-1].sub.split(' ~ ')[1]}`;
+  }
+
+  const diff=ra-rb;
+  const monthCount=months.length;
+  const supply=diff*monthCount;
+  const vat=Math.round(supply*0.1);
+  const tot=supply+vat;
+
+  const [ccy,ccm,ccd]=cdv.split('-').map(Number);
+  const issueStr=ds(ccy,ccm,ccd);
+
+  // ── 결과 화면
+  document.getElementById('r-metachips').innerHTML=
+    `<span class="meta-chip">소급 기간 ${periodStr}</span>
+     <span class="meta-chip">총 ${monthCount}개월</span>
+     <span class="meta-chip">작성일 ${issueStr}</span>`;
+  document.getElementById('r-diffCalc').textContent=`인상 후 ${fmt(ra)} − 기존 ${fmt(rb)}`;
+  document.getElementById('r-diffAmt').innerHTML=fmt(diff)+'<span class="vat-note">(VAT 별도)</span>';
+
+  let rows='';
+  months.forEach(mo=>{
+    rows+=`<tr><td style="white-space:nowrap;">${mo.label}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(diff)}</strong></td></tr>`;
+  });
+  document.getElementById('r-monthBody').innerHTML=rows;
+  document.getElementById('r-totalAmt').textContent=fmt(supply);
+  document.getElementById('r-refRow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
+
+  document.getElementById('r-result').style.display='block';
+  document.getElementById('r-result').scrollIntoView({behavior:'smooth',block:'start'});
+
+  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr};
+
+  // ── 안내문
+  document.getElementById('r-noticeEmpty').style.display='none';
+  document.getElementById('r-noticeContent').style.display='block';
+  document.getElementById('r-n-store').textContent=store?`［ ${store} ］`:'';
+  document.getElementById('r-n-metachips').innerHTML=
+    `<span class="meta-chip">소급 기간 ${periodStr}</span>
+     <span class="meta-chip">총 ${monthCount}개월</span>`;
+  document.getElementById('r-n-rentBefore').textContent=fmt(rb);
+  document.getElementById('r-n-rentAfter').textContent=fmt(ra);
+  document.getElementById('r-n-period').textContent=`${periodStr} (${monthCount}개월분)`;
+  document.getElementById('r-n-calc').textContent=`월 인상액 ${fmt(diff)} × ${monthCount}개월`;
+  document.getElementById('r-n-amt').innerHTML=fmt(supply)+'<span class="vat-note">(VAT 별도)</span>';
+  document.getElementById('r-n-issue').textContent=issueStr;
+  document.getElementById('r-n-supply').textContent=fmt(supply);
+  document.getElementById('r-n-vat').textContent=fmt(vat);
+  document.getElementById('r-n-total').textContent=fmt(tot);
+  document.getElementById('r-n-refrow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
+  document.getElementById('r-n-footer').textContent=bas?`근거자료: ${bas}`:'';
+  document.getElementById('r-n-points').innerHTML=`
+    <div class="notice-point"><span class="pt-num">1</span><span>변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 임차료 인상분</strong>을 소급 정산한 금액입니다.</span></div>
+    <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
+    <div class="notice-point"><span class="pt-num">3</span><span>세금계산서 발행일은 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
+}
+
+// 소급 이미지 저장/공유
+function retroFileName(){
+  const d=retroData;
+  const store=(d&&d.store)?d.store:'';
+  let nm=store?(store+'_임차료 인상 소급 안내'):'임차료 인상 소급 안내';
+  return nm+'.png';
+}
+async function saveRetroImage(){
+  if(typeof html2canvas==='undefined'){document.getElementById('r-share-hint').textContent='이미지 모듈을 불러오지 못했어요. 모바일 브라우저에서 열어 주세요.';return;}
+  try{
+    const canvas=await html2canvas(document.getElementById('r-captureArea'),{scale:2,backgroundColor:'#ffffff'});
+    const link=document.createElement('a');link.download=retroFileName();link.href=canvas.toDataURL('image/png');
+    document.body.appendChild(link);link.click();document.body.removeChild(link);
+  }catch(e){document.getElementById('r-share-hint').textContent='이미지 저장 중 문제가 발생했습니다.';}
+}
+async function shareRetroImage(){
+  if(typeof html2canvas==='undefined'){document.getElementById('r-share-hint').textContent='이미지 모듈을 불러오지 못했어요. 모바일 브라우저에서 열어 주세요.';return;}
+  try{
+    const canvas=await html2canvas(document.getElementById('r-captureArea'),{scale:2,backgroundColor:'#ffffff'});
+    const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
+    const file=new File([blob],retroFileName(),{type:'image/png'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'임차료 인상 소급 안내'});
+    }else{
+      const link=document.createElement('a');link.download=retroFileName();link.href=canvas.toDataURL('image/png');
+      document.body.appendChild(link);link.click();document.body.removeChild(link);
+      document.getElementById('r-share-hint').textContent='이 환경은 바로 공유를 지원하지 않아 이미지로 저장했어요.';
+    }
+  }catch(e){ if(e&&e.name==='AbortError')return; document.getElementById('r-share-hint').textContent='공유 중 문제가 발생했습니다.';}
 }
 
 function applyTypeLabels() {
@@ -475,6 +937,8 @@ function applyTypeLabels() {
 
   // 승계 모드: 발행월 카드 숨김 (안내문에서 자동 규칙 적용)
   document.getElementById('issuemonth-wrap').style.display = isT ? 'none' : '';
+  // 승계 모드: 고정관리비 카드 숨김 (변경 모드 전용 기능)
+  document.getElementById('mgmt-card').style.display = isT ? 'none' : '';
   // 승계 모드는 단일 임대료 비교가 아니므로 지급조건/발행월 카드 의미 약함 → 지급조건은 유지(선/후불 표시용 X), 일단 변경모드만 노출
   document.getElementById('transfer-subtabs').style.display = isT ? '' : 'none';
 }
@@ -513,6 +977,20 @@ function setPayType(t){
     b.classList.remove('active-pre','active-post');
     if(p===t) b.classList.add('active-'+t);
   });
+}
+
+// ===== 고정관리비 =====
+let mgmtOn=false, mgmtVary=false;
+function toggleMgmt(){
+  mgmtOn=document.getElementById('mgmt-toggle').checked;
+  document.getElementById('mgmt-body').style.display=mgmtOn?'':'none';
+}
+function setMgmtVary(v){
+  mgmtVary=v;
+  document.getElementById('mgmt-vary-none').classList.toggle('active',!v);
+  document.getElementById('mgmt-vary-yes').classList.toggle('active',v);
+  document.getElementById('mgmt-fixed').style.display=v?'none':'';
+  document.getElementById('mgmt-varying').style.display=v?'':'none';
 }
 
 // ===== 발행월 동기화 (변경 모드) =====
@@ -631,6 +1109,39 @@ function calculate(){
   const labelB = isT?'기존 임대인':'변경 전';
   const labelA = isT?'신규 임대인':'변경 후';
 
+  // ── 고정관리비 계산 (변경 모드 전용, 승계 모드는 관리비 UI 숨김)
+  let mgmt=null;
+  if(mgmtOn && !isT){
+    if(mgmtVary){
+      const mb=parseFloat(document.getElementById('mgmtBefore').value);
+      const ma=parseFloat(document.getElementById('mgmtAfter').value);
+      const mcdv=document.getElementById('mgmtChangeDate').value;
+      if(isNaN(mb)||mb<0) return se('기존 관리비를 올바르게 입력해 주세요.');
+      if(isNaN(ma)||ma<0) return se('변경 관리비를 올바르게 입력해 주세요.');
+      if(!mcdv) return se('관리비 변경일을 입력해 주세요.');
+      const [mcy,mcm,mcd]=mcdv.split('-').map(Number);
+      const mcdN=mcy*10000+mcm*100+mcd;
+      if(mcdN<pStartN||mcdN>pEndN) return se('관리비 변경일이 기산 구간 범위 안에 있어야 합니다.');
+      if(mcdN===pStartN) return se('관리비 변경일이 기산 시작일이면 분할 구간이 없습니다.');
+      const mcdDate=new Date(mcy,mcm-1,mcd);
+      const mbd=Math.round((mcdDate-psDate)/msPerDay);
+      const mad=total-mbd;
+      const mbEndDate=new Date(mcdDate-msPerDay);
+      const mbEndStr=ds(mbEndDate.getFullYear(),mbEndDate.getMonth()+1,mbEndDate.getDate());
+      const mcdStr=ds(mcy,mcm,mcd);
+      const mdpb=Math.round(mb/total), mdpa=Math.round(ma/total);
+      const mab=Math.round((mb/total)*mbd), maa=Math.round((ma/total)*mad);
+      mgmt={ vary:true, mb, ma, mbd, mad, mcdStr, mbEndStr, mdpb, mdpa, mab, maa,
+             supply:mab+maa, psStr, peStr };
+    }else{
+      const mf=parseFloat(document.getElementById('mgmtFlat').value);
+      if(isNaN(mf)||mf<0) return se('월 고정관리비를 올바르게 입력해 주세요.');
+      const mdp=Math.round(mf/total);
+      const msupply=Math.round((mf/total)*total); // = mf 근사, 일할 일관성 위해
+      mgmt={ vary:false, mf, mdp, supply:mf, days:total, psStr, peStr };
+    }
+  }
+
   // ── 결과 화면
   document.getElementById('metaChips').innerHTML=
     `<span class="meta-chip">기산 기간 ${psStr} ~ ${peStr}</span>
@@ -652,9 +1163,51 @@ function calculate(){
        <tr><td><span class="tag-a">${labelA}</span></td><td>${fmt(ra)}</td><td>${total}일</td><td><strong>${fmt(dpaR).replace('원','원/일')}</strong></td></tr>`;
 
   // 결과 합계 (공급가액)
-  const supplyChange = ab+aa;
-  document.getElementById('totalLabel').textContent = isT ? '월 임대료 합계 (공급가액)' : '합계 (공급가액)';
-  document.getElementById('totalAmt').textContent=fmt(supplyChange);
+  const rentSupply = ab+aa;
+  const mgmtSupply = mgmt ? mgmt.supply : 0;
+  const grandSupply = rentSupply + mgmtSupply;
+
+  // 관리비 결과 표시 영역
+  const mgmtResult=document.getElementById('mgmt-result');
+  if(mgmt){
+    let inner='';
+    if(mgmt.vary){
+      inner=`
+        <div class="period-row" style="margin-bottom:10px;">
+          <div class="period-box before">
+            <div class="period-tag">관리비 (변경 전)</div>
+            <div class="period-dates">${mgmt.psStr} ~ ${mgmt.mbEndStr} (${mgmt.mbd}일)</div>
+            <div class="period-calc">${fmt(mgmt.mb)} ÷ ${total}일 × ${mgmt.mbd}일</div>
+            <div class="period-amount">${fmt(mgmt.mab)}<span class="vat-note">(VAT 별도)</span></div>
+          </div>
+          <div class="period-box after">
+            <div class="period-tag">관리비 (변경 후)</div>
+            <div class="period-dates">${mgmt.mcdStr} ~ ${mgmt.peStr} (${mgmt.mad}일)</div>
+            <div class="period-calc">${fmt(mgmt.ma)} ÷ ${total}일 × ${mgmt.mad}일</div>
+            <div class="period-amount">${fmt(mgmt.maa)}<span class="vat-note">(VAT 별도)</span></div>
+          </div>
+        </div>`;
+    }else{
+      inner=`
+        <div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);margin-bottom:10px;">
+          <div class="period-tag" style="color:var(--accent);">고정관리비 (변동 없음)</div>
+          <div class="period-dates">${mgmt.psStr} ~ ${mgmt.peStr} (${mgmt.days}일 전체)</div>
+          <div class="period-calc">월 ${fmt(mgmt.mf)} · 기간 전체 적용</div>
+          <div class="period-amount" style="color:var(--accent);">${fmt(mgmt.supply)}<span class="vat-note">(VAT 별도)</span></div>
+        </div>`;
+    }
+    mgmtResult.innerHTML=`<div class="divider"></div><div style="font-size:11px;color:var(--ink-soft);margin-bottom:9px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">고정관리비 정산</div>${inner}
+      <div style="display:flex;justify-content:space-between;padding:4px 2px;font-size:13px;">
+        <span style="color:var(--ink-soft);">임대료 소계</span><span style="font-family:var(--mono);font-weight:600;">${fmt(rentSupply)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 2px;font-size:13px;">
+        <span style="color:var(--ink-soft);">관리비 소계</span><span style="font-family:var(--mono);font-weight:600;">${fmt(mgmtSupply)}</span></div>`;
+    mgmtResult.style.display='';
+    document.getElementById('totalLabel').textContent='총 합계 (임대료+관리비·공급가액)';
+  }else{
+    mgmtResult.innerHTML=''; mgmtResult.style.display='none';
+    document.getElementById('totalLabel').textContent = isT ? '월 임대료 합계 (공급가액)' : '합계 (공급가액)';
+  }
+  document.getElementById('totalAmt').textContent=fmt(grandSupply);
 
   document.getElementById('refRow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
 
@@ -676,7 +1229,8 @@ function calculate(){
     old:{ supply:supplyOld, vat:vatOld, tot:totOld, dates:`${psStr} ~ ${bdEndStr}`, days:bd, rent:rb, dpR:dpbR },
     new:{ supply:supplyNew, vat:vatNew, tot:totNew, dates:`${cdStr} ~ ${peStr}`, days:ad, rent:ra, dpR:dpaR },
     issueMonthVal: document.getElementById('calc-issuemonth').value,
-    payType, currentMode, cdStr2:cdStr
+    payType, currentMode, cdStr2:cdStr,
+    mgmt, rentSupply, mgmtSupply, grandSupply
   };
 
   document.getElementById('noticeEmpty').style.display='none';
@@ -760,8 +1314,43 @@ function renderChangeNotice(){
   document.getElementById('n-acalc').textContent=`${fmt(d.ra)} ÷ ${d.total}일 × ${d.ad}일\n= ${fmt(d.dpaR).replace('원','원/일')} × ${d.ad}일`;
   document.getElementById('n-aamt').innerHTML=fmt(d.new.supply)+'<span class="vat-note">(VAT 별도)</span>';
 
-  // 금액: 변경모드는 변경 전+후 공급가 합산
-  const supply=d.old.supply+d.new.supply;
+  // 관리비 표시 + 금액 합산
+  const mgmtBox=document.getElementById('n-mgmt-box');
+  let rentSupply=d.old.supply+d.new.supply;
+  let mgmtSupply=0;
+  if(d.mgmt){
+    mgmtSupply=d.mgmt.supply;
+    let inner='';
+    if(d.mgmt.vary){
+      inner=`<div class="period-row">
+        <div class="period-box before">
+          <div class="period-tag">관리비 (변경 전)</div>
+          <div class="period-dates">${d.mgmt.psStr} ~ ${d.mgmt.mbEndStr} (${d.mgmt.mbd}일)</div>
+          <div class="period-calc">${fmt(d.mgmt.mb)} ÷ ${d.total}일 × ${d.mgmt.mbd}일</div>
+          <div class="period-amount">${fmt(d.mgmt.mab)}<span class="vat-note">(VAT 별도)</span></div>
+        </div>
+        <div class="period-box after">
+          <div class="period-tag">관리비 (변경 후)</div>
+          <div class="period-dates">${d.mgmt.mcdStr} ~ ${d.mgmt.peStr} (${d.mgmt.mad}일)</div>
+          <div class="period-calc">${fmt(d.mgmt.ma)} ÷ ${d.total}일 × ${d.mgmt.mad}일</div>
+          <div class="period-amount">${fmt(d.mgmt.maa)}<span class="vat-note">(VAT 별도)</span></div>
+        </div></div>`;
+    }else{
+      inner=`<div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);">
+          <div class="period-tag" style="color:var(--accent);">고정관리비 (변동 없음)</div>
+          <div class="period-dates">${d.mgmt.psStr} ~ ${d.mgmt.peStr} (기간 전체)</div>
+          <div class="period-calc">월 ${fmt(d.mgmt.mf)} · 기간 전체 적용</div>
+          <div class="period-amount" style="color:var(--accent);">${fmt(d.mgmt.supply)}<span class="vat-note">(VAT 별도)</span></div>
+        </div>`;
+    }
+    mgmtBox.innerHTML=inner;
+    mgmtBox.style.display='';
+  }else{
+    mgmtBox.innerHTML=''; mgmtBox.style.display='none';
+  }
+
+  // 금액 명세: 임대료+관리비 공급가 합산
+  const supply=rentSupply+mgmtSupply;
   const vat=Math.round(supply*0.1);
   fillInvoice(supply, vat, supply+vat);
 
@@ -777,9 +1366,16 @@ function renderChangeNotice(){
   document.getElementById('n-footer').textContent=d.bas?`근거자료: ${d.bas}`:'';
 
   // 유의사항
-  let pts=`
-    <div class="notice-point"><span class="pt-num">1</span><span>이번 달은 임대료 변경이 발생한 월로, <strong>변경 전·후 임대료를 일수 기준으로 나누어 합산</strong>한 금액이 당월 납부 임대료입니다.</span></div>
-    <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 <strong>합계 금액 기준으로 1장만 발행</strong>해 주시면 됩니다. 변경 전·후 금액을 각각 나누어 2장 발행하실 필요가 없습니다.</span></div>`;
+  let pts='';
+  if(d.mgmt){
+    pts=`
+      <div class="notice-point"><span class="pt-num">1</span><span>이번 달 청구 금액은 <strong>임대료와 고정관리비를 각각 일수 기준으로 정산</strong>하여 합산한 금액입니다.</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 <strong>합계 금액(임대료+관리비) 기준으로 1장만 발행</strong>해 주시면 됩니다. 항목별로 나누어 여러 장 발행하실 필요가 없습니다.</span></div>`;
+  }else{
+    pts=`
+      <div class="notice-point"><span class="pt-num">1</span><span>이번 달은 임대료 변경이 발생한 월로, <strong>변경 전·후 임대료를 일수 기준으로 나누어 합산</strong>한 금액이 당월 납부 임대료입니다.</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 <strong>합계 금액 기준으로 1장만 발행</strong>해 주시면 됩니다. 변경 전·후 금액을 각각 나누어 2장 발행하실 필요가 없습니다.</span></div>`;
+  }
   if(d.issueMonthVal){
     const [yy,mm]=d.issueMonthVal.split('-').map(Number);
     pts+=`<div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>${yy}년 ${mm}월</strong> 중 편하신 날짜에 발행해 주시면 됩니다. 월 내 발행일은 자유롭게 선택하셔도 무방합니다.</span></div>`;
@@ -808,6 +1404,7 @@ function renderTransferNotice(){
   // 상대방 금액 비노출: 변경전/후 2박스 숨기고 단일 박스만
   document.getElementById('n-period-row').style.display='none';
   document.getElementById('n-single-box').style.display='';
+  document.getElementById('n-mgmt-box').style.display='none';
 
   document.getElementById('n-metachips').innerHTML=
     `<span class="meta-chip">기산 기간 ${d.psStr} ~ ${d.peStr}</span>
@@ -825,10 +1422,12 @@ function renderTransferNotice(){
   const mrow=document.getElementById('n-invoice-month-row');
   if(isOld){
     mrow.style.display='';
-    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 발행일<small>매도일(매매일)에 발행</small>`;
-    document.getElementById('n-issuemonth-display').textContent=d.cdStr;
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 발행일<small>매도일(${d.cdStr})까지 발행</small>`;
+    document.getElementById('n-issuemonth-display').textContent=`~ ${d.cdStr}`;
   }else{
-    mrow.style.display='none';
+    mrow.style.display='';
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 발행일<small>매도일(${d.cdStr}) 이후 발행</small>`;
+    document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} ~`;
   }
 
   document.getElementById('n-refrow').innerHTML=d.bas?`<span>근거자료</span>  ${d.bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
@@ -839,12 +1438,12 @@ function renderTransferNotice(){
     pts=`
       <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약이 승계되어, <strong>매매(승계)일 전일까지의 임대료</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
       <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
-      <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>매도일(매매일) ${d.cdStr}</strong> 자로 발행해 주셔야 합니다.</span></div>`;
+      <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>매도일(${d.cdStr})을 넘기지 않는 범위</strong>에서 편하신 날짜에 발행해 주시면 됩니다.</span></div>`;
   }else{
     pts=`
       <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약 승계에 따라, <strong>매매(승계)일부터 기간 종료일까지의 임대료</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
       <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
-      <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>별도 제약이 없으니</strong> 편하신 날짜에 발행해 주시면 됩니다.</span></div>`;
+      <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>매도일(${d.cdStr}) 이후</strong>라면 편하신 날짜에 발행해 주시면 됩니다.</span></div>`;
   }
   document.getElementById('n-points').innerHTML=pts;
 }
@@ -874,9 +1473,10 @@ async function buildCanvas(){
 }
 function fileName(){
   const d=transferData;
-  let nm = (d&&d.store?d.store:'세금계산서_발행안내');
+  const store = (d&&d.store) ? d.store : '';
+  let nm = store ? (store+'_세금계산서 발행 안내') : '세금계산서 발행 안내';
   if(d&&d.isT) nm += '_'+(noticeParty==='old'?'기존임대인':'신규임대인');
-  return nm.replace(/\s+/g,'')+'.png';
+  return nm+'.png';
 }
 async function saveImage(){
   if(!ensureLib()) return;
