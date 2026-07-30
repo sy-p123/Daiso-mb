@@ -123,6 +123,30 @@ if (typeof html2canvas === 'undefined') {
   .mode-btn:not(.active):hover{border-color:var(--accent-mid);color:var(--accent-mid);}
   .mode-hint{font-size:11px;color:var(--accent-mid);background:var(--accent-light);border-radius:6px;padding:5px 11px;margin-top:8px;line-height:1.5;display:none;}
   .mode-hint.visible{display:block;}
+  /* 소급 안내문 컴팩트 (세로 길이 축소) */
+  #r-captureArea.notice-sheet{padding:20px 22px;}
+  #r-captureArea .notice-header{margin-bottom:16px;padding-bottom:13px;}
+  #r-captureArea .notice-header h2{font-size:19px;}
+  #r-captureArea .notice-header .eyebrow{margin-bottom:6px;}
+  #r-captureArea .notice-header .n-store{margin-top:7px;font-size:14px;}
+  #r-captureArea .result-meta{margin-bottom:10px !important;}
+  #r-captureArea .rent-mini{margin-bottom:10px;}
+  #r-captureArea .rent-mini .rm-row{padding:7px 14px;}
+  #r-captureArea .daily-table th{padding:6px 11px;}
+  #r-captureArea .daily-table td{padding:6px 11px;}
+  #r-captureArea .invoice-box{margin-bottom:10px;}
+  #r-captureArea .invoice-month-row{padding:10px 16px;}
+  #r-captureArea .invoice-row{padding:8px 16px;}
+  #r-captureArea .invoice-month{font-size:16px;}
+  #r-captureArea #r-n-countbanner{padding:9px 16px !important;margin-bottom:10px !important;}
+  #r-captureArea #r-n-div1,#r-captureArea #r-n-div2{margin-bottom:6px !important;}
+  #r-captureArea #r-n-div2{margin-top:12px !important;}
+  #r-captureArea .ref-row{margin-bottom:10px !important;padding:7px 13px;}
+  #r-captureArea .notice-card{padding:14px 16px;margin-bottom:10px;}
+  #r-captureArea .notice-card .nc-label{margin-bottom:9px;padding-bottom:6px;}
+  #r-captureArea .notice-point{padding:7px 0;font-size:12.5px;line-height:1.5;gap:9px;}
+  #r-captureArea .notice-footer{padding-top:4px;}
+  #r-captureArea .rent-mini + #r-n-detail-label,#r-captureArea #r-n-detail-label{margin-bottom:6px !important;}
   /* 금액 명세 (공급가/부가세/합계) - 밝은 테마, 세로 행 */
   .invoice-box{background:var(--accent-light);border:1px solid #d6cffb;border-radius:12px;overflow:hidden;margin-bottom:14px;}
   .invoice-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 18px;background:#e2dcfa;border-bottom:1px solid #d6cffb;}
@@ -605,9 +629,37 @@ if (typeof html2canvas === 'undefined') {
   <div class="card">
     <div class="section-label">변경계약서 작성일</div>
     <div class="field">
-      <label>변경계약서 작성일 (세금계산서 발행일)</label>
+      <label>변경계약서 작성일 (세금계산서 작성일자)</label>
       <input type="date" id="r-contractDate">
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">세금계산서는 반드시 이 날짜로 발행받아야 합니다.</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">소급분 세금계산서는 반드시 이 날짜로 발행받아야 합니다.</div>
+    </div>
+  </div>
+
+  <!-- 이번 달 임차료 함께 발행 (선택) -->
+  <div class="card" id="r-thismonth-card">
+    <div class="section-label">이번 달 임차료 <span style="color:var(--ink-soft);font-weight:500;letter-spacing:0;text-transform:none;font-size:11px;">(선택)</span></div>
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:2px;">
+      <input type="checkbox" id="r-thismonth-toggle" onchange="toggleThisMonth()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+      이번 달 임차료 세금계산서도 함께 발행받아야 합니다 (총 2장)
+    </label>
+    <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.5;">이번 달 세금계산서를 아직 발행하지 않은 경우, 소급분과 별도로 이번 달 임차료를 발행받습니다.</div>
+
+    <div id="r-thismonth-body" style="display:none;margin-top:16px;">
+      <div class="field-grid two">
+        <div class="field">
+          <label>이번 달 기준 월</label>
+          <input type="month" id="r-thisMonthYm">
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">소급 종료월 다음 달로 자동 설정됩니다. 수정 가능해요.</div>
+        </div>
+        <div class="field">
+          <label>당월 임차료 (부가세 별도)</label>
+          <div class="won-wrap">
+            <input type="number" id="r-thisMonthRent" placeholder="0" min="0" oninput="updateKor('r-thisMonthRent','r-korThisMonth')">
+            <span class="kor-amount" id="r-korThisMonth"></span>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">인상 후 금액이 자동 입력됩니다. 임대인이 이미 기존 금액으로 발행해 인상분만 추가 발행하는 경우, 금액을 직접 수정하세요.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -660,26 +712,30 @@ if (typeof html2canvas === 'undefined') {
       <!-- 인상 전·후 임대료 (미니 리스트) -->
       <div class="rent-mini">
         <div class="rm-row">
-          <span class="rm-k">인상 전 임대료 (월)</span>
+          <span class="rm-k">인상 전 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
           <span class="rm-vb" id="r-n-rentBefore"></span>
         </div>
         <div class="rm-row">
-          <span class="rm-k">인상 후 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
+          <span class="rm-k">인상 후 임대료 (월)</span>
           <span class="rm-va" id="r-n-rentAfter"></span>
         </div>
       </div>
 
       <!-- 구간별 소급 상세 -->
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">미지급 임차료 인상분 소급 내역</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;" id="r-n-detail-label">미지급 임차료 인상분 소급 내역</div>
       <table class="daily-table retro-table" style="margin-bottom:8px;">
         <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
         <tbody id="r-n-monthBody"></tbody>
       </table>
       <div style="font-size:11px;color:var(--ink-soft);margin-bottom:14px;text-align:right;" id="r-n-calc"></div>
 
+      <!-- 발행 요청 배너 -->
+      <div id="r-n-countbanner" style="display:none;background:var(--accent);color:#fff;border-radius:9px;padding:11px 16px;margin-bottom:14px;font-size:13.5px;font-weight:600;text-align:center;"></div>
+
+      <div id="r-n-div1" style="display:none;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-left:2px;">1. 소급분 발행</div>
       <div class="invoice-box">
         <div class="invoice-month-row">
-          <div class="invoice-mlabel">세금계산서 발행일<small>변경계약서 작성일과 동일하게 발행</small></div>
+          <div class="invoice-mlabel" id="r-n-issue-label">세금계산서 작성일자<small>변경계약서 작성일과 동일하게 발행</small></div>
           <div class="invoice-month" id="r-n-issue"></div>
         </div>
         <div class="invoice-row">
@@ -691,8 +747,31 @@ if (typeof html2canvas === 'undefined') {
           <div class="invoice-val" id="r-n-vat"></div>
         </div>
         <div class="invoice-row invoice-total-row">
-          <div class="invoice-key">합계 금액<small>공급가액 + 부가세</small></div>
+          <div class="invoice-key" id="r-n-total-label">합계 금액<small>공급가액 + 부가세</small></div>
           <div class="invoice-amount" id="r-n-total"></div>
+        </div>
+      </div>
+
+      <!-- 당월분 (2건 케이스) -->
+      <div id="r-n-thismonth-box" style="display:none;">
+        <div id="r-n-div2" style="font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 8px;padding-left:2px;">2. 당월분 발행</div>
+        <div class="invoice-box">
+          <div class="invoice-month-row">
+            <div class="invoice-mlabel" id="r-n-tm-label">당월 세금계산서 작성일자<small>변경계약서 작성일 이후 발행 권장</small></div>
+            <div class="invoice-month" id="r-n-tm-issue"></div>
+          </div>
+          <div class="invoice-row">
+            <div class="invoice-key">공급가액</div>
+            <div class="invoice-val" id="r-n-tm-supply"></div>
+          </div>
+          <div class="invoice-row">
+            <div class="invoice-key">부가세액 (10%)</div>
+            <div class="invoice-val" id="r-n-tm-vat"></div>
+          </div>
+          <div class="invoice-row invoice-total-row">
+            <div class="invoice-key">합계 금액<small>공급가액 + 부가세</small></div>
+            <div class="invoice-amount" id="r-n-tm-total"></div>
+          </div>
         </div>
       </div>
 
@@ -767,6 +846,41 @@ function switchRetroTab(tab,btn){
 }
 function rse(msg){const e=document.getElementById('r-errMsg');e.textContent=msg;e.style.display='block';document.getElementById('r-result').style.display='none';}
 function rce(){document.getElementById('r-errMsg').style.display='none';}
+
+// 이번 달 임차료 함께 발행
+let thisMonthOn=false;
+function toggleThisMonth(){
+  thisMonthOn=document.getElementById('r-thismonth-toggle').checked;
+  document.getElementById('r-thismonth-body').style.display=thisMonthOn?'':'none';
+  if(thisMonthOn){
+    autoSetThisMonth();
+    // 당월 임차료 금액: 인상 후 금액 자동 입력 (비어 있을 때만)
+    const tmRent=document.getElementById('r-thisMonthRent');
+    const ra=document.getElementById('r-rentAfter').value;
+    if(!tmRent.value && ra){
+      tmRent.value=ra;
+      updateKor('r-thisMonthRent','r-korThisMonth');
+    }
+  }
+}
+function autoSetThisMonth(){
+  // 소급 종료월(모드1) 또는 종료일(모드2) 다음 달로 자동 설정
+  const ym=document.getElementById('r-thisMonthYm');
+  if(ym.value) return; // 이미 입력했으면 유지
+  let y,m;
+  if(retroMode===1){
+    const lastv=document.getElementById('r-lastMonth').value;
+    if(!lastv) return;
+    [y,m]=lastv.split('-').map(Number);
+  }else{
+    const e2=document.getElementById('r-endDate2').value;
+    if(!e2) return;
+    const [ey,em]=e2.split('-').map(Number);
+    y=ey;m=em;
+  }
+  m++; if(m>12){m=1;y++;}
+  ym.value=y+'-'+String(m).padStart(2,'0');
+}
 
 function calcRetro(){
   rce();
@@ -876,6 +990,18 @@ function calcRetro(){
   const [ccy,ccm,ccd]=cdv.split('-').map(Number);
   const issueStr=ds(ccy,ccm,ccd);
 
+  // 이번 달 임차료 (선택)
+  let thisMonth=null;
+  if(thisMonthOn){
+    const tmYm=document.getElementById('r-thisMonthYm').value;
+    const tmRent=parseFloat(document.getElementById('r-thisMonthRent').value);
+    if(!tmYm) return rse('이번 달 기준 월을 선택해 주세요.');
+    if(isNaN(tmRent)||tmRent<=0) return rse('이번 달 임차료를 올바르게 입력해 주세요.');
+    const [ty,tm]=tmYm.split('-').map(Number);
+    const tmVat=Math.round(tmRent*0.1);
+    thisMonth={ ym:`${ty}년 ${tm}월`, rent:tmRent, vat:tmVat, tot:tmRent+tmVat };
+  }
+
   // ── 결과 화면
   const hasPartial=months.some(m=>m.partial);
   const countLabel = hasPartial ? `${monthCount}개 구간` : `총 ${monthCount}개월`;
@@ -900,7 +1026,7 @@ function calcRetro(){
   document.getElementById('r-result').style.display='block';
   document.getElementById('r-result').scrollIntoView({behavior:'smooth',block:'start'});
 
-  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr,hasPartial,countLabel,months};
+  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr,hasPartial,countLabel,months,thisMonth};
 
   // ── 안내문
   document.getElementById('r-noticeEmpty').style.display='none';
@@ -929,13 +1055,47 @@ function calcRetro(){
   document.getElementById('r-n-total').textContent=fmt(tot);
   document.getElementById('r-n-refrow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
   document.getElementById('r-n-footer').textContent=bas?`근거자료: ${bas}`:'';
+
+  const tm=retroData.thisMonth;
+  const countBanner=document.getElementById('r-n-countbanner');
+  const tmBox=document.getElementById('r-n-thismonth-box');
   const p1txt = hasPartial
     ? `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 기간의 <strong>임차료 인상분</strong>을 소급 정산한 금액입니다. (계약 종료일이 월 중간인 경우 해당 월은 일수 비례로 계산)`
     : `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 임차료 인상분</strong>을 소급 정산한 금액입니다.`;
-  document.getElementById('r-n-points').innerHTML=`
-    <div class="notice-point"><span class="pt-num">1</span><span>${p1txt}</span></div>
-    <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
-    <div class="notice-point"><span class="pt-num">3</span><span>세금계산서 발행일은 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
+
+  if(tm){
+    // 2건 케이스
+    countBanner.style.display='';
+    countBanner.textContent='세금계산서 발행 요청 (2건)';
+    document.getElementById('r-n-detail-label').textContent='미지급 임차료 인상분 소급 내역';
+    document.getElementById('r-n-div1').style.display='';
+    document.getElementById('r-n-issue-label').innerHTML=`세금계산서 작성일자<small>변경계약서 작성일과 동일하게 발행</small>`;
+    document.getElementById('r-n-total-label').innerHTML=`소급분 합계<small>공급가액 + 부가세</small>`;
+    tmBox.style.display='';
+    document.getElementById('r-n-tm-issue').textContent=`${issueStr} 이후`;
+    document.getElementById('r-n-tm-supply').textContent=fmt(tm.rent);
+    document.getElementById('r-n-tm-vat').textContent=fmt(tm.vat);
+    document.getElementById('r-n-tm-total').textContent=fmt(tm.tot);
+    document.getElementById('r-n-tm-label').innerHTML=`세금계산서 작성일자<small>변경계약서 작성일 이후 발행 권장</small>`;
+    document.getElementById('r-n-div2').textContent=`2. 당월분 발행 (${tm.ym})`;
+    document.getElementById('r-n-points').innerHTML=`
+      <div class="notice-point"><span class="pt-num">1</span><span>${p1txt}</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>이번 건은 세금계산서를 <strong>2건</strong>으로 구분해 발행해 주셔야 합니다. 두 건은 작성일자 기준이 달라 합산 발행이 어렵습니다.</span></div>
+      <div class="notice-point"><span class="pt-num">3</span><span><strong>1. 소급분</strong>은 <strong>변경계약서 작성일(${issueStr})</strong>과 동일한 작성일자로 발행해 주셔야 합니다.</span></div>
+      <div class="notice-point"><span class="pt-num">4</span><span><strong>2. 당월분(${tm.ym})</strong>은 인상 후 전체 금액으로, <strong>변경계약서 작성일(${issueStr}) 이후</strong> 작성일자로 발행해 주시면 됩니다.</span></div>`;
+  }else{
+    // 1건 케이스
+    countBanner.style.display='none';
+    tmBox.style.display='none';
+    document.getElementById('r-n-div1').style.display='none';
+    document.getElementById('r-n-detail-label').textContent='미지급 임차료 인상분 소급 내역';
+    document.getElementById('r-n-issue-label').innerHTML=`세금계산서 작성일자<small>변경계약서 작성일과 동일하게 발행</small>`;
+    document.getElementById('r-n-total-label').innerHTML=`합계 금액<small>공급가액 + 부가세</small>`;
+    document.getElementById('r-n-points').innerHTML=`
+      <div class="notice-point"><span class="pt-num">1</span><span>${p1txt}</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1건</strong>을 발행해 주시면 됩니다.</span></div>
+      <div class="notice-point"><span class="pt-num">3</span><span>세금계산서 작성일자는 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
+  }
 }
 
 // 소급 이미지 저장/공유
@@ -1447,7 +1607,7 @@ function renderTransferNotice(){
   const party = isOld ? d.old : d.new;
   const partyName = isOld ? '기존 임대인' : '신규 임대인';
 
-  document.getElementById('n-title').textContent=`세금계산서 발행 안내 · ${partyName}`;
+  document.getElementById('n-title').innerHTML=`세금계산서 발행 안내<span style="display:block;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:600;color:var(--accent);margin-top:6px;">${partyName}</span>`;
   document.getElementById('n-storename').textContent=d.store?`［ ${d.store} ］`:'';
   document.getElementById('transfer-subtabs').style.display='';
 
@@ -1472,12 +1632,12 @@ function renderTransferNotice(){
   const mrow=document.getElementById('n-invoice-month-row');
   if(isOld){
     mrow.style.display='';
-    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 발행일<small>매도일(${d.cdStr})까지 발행</small>`;
-    document.getElementById('n-issuemonth-display').textContent=`~ ${d.cdStr}`;
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이내로 작성 (그 이전 날짜도 가능)</small>`;
+    document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} 이전`;
   }else{
     mrow.style.display='';
-    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 발행일<small>매도일(${d.cdStr}) 이후 발행</small>`;
-    document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} ~`;
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이후로 작성 (그 이후 날짜도 가능)</small>`;
+    document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} 이후`;
   }
 
   document.getElementById('n-refrow').innerHTML=d.bas?`<span>근거자료</span>  ${d.bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
