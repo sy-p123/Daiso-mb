@@ -691,6 +691,17 @@ if (typeof html2canvas === 'undefined') {
       <span class="total-amount" id="r-totalAmt"></span>
     </div>
     <div class="ref-row" id="r-refRow"></div>
+
+    <div id="r-tm-result" style="display:none;margin-top:16px;">
+      <div class="divider"></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:9px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">당월분 세금계산서 발행</div>
+      <div class="period-box after" style="border-left-color:var(--accent);background:var(--accent-light);">
+        <div class="period-tag" style="color:var(--accent);" id="r-tmr-title">당월 임차료</div>
+        <div class="period-dates" id="r-tmr-basis"></div>
+        <div class="period-calc" id="r-tmr-calc"></div>
+        <div class="period-amount" style="color:var(--accent);" id="r-tmr-amt"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -721,24 +732,6 @@ if (typeof html2canvas === 'undefined') {
 
       <div class="result-meta" id="r-n-metachips" style="margin-bottom:14px;"></div>
 
-      <div class="rent-mini">
-        <div class="rm-row">
-          <span class="rm-k">인상 전 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
-          <span class="rm-vb" id="r-n-rentBefore"></span>
-        </div>
-        <div class="rm-row">
-          <span class="rm-k">인상 후 임대료 (월)</span>
-          <span class="rm-va" id="r-n-rentAfter"></span>
-        </div>
-      </div>
-
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;" id="r-n-detail-label">미지급 임차료 인상분 소급 내역</div>
-      <table class="daily-table retro-table" style="margin-bottom:8px;">
-        <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
-        <tbody id="r-n-monthBody"></tbody>
-      </table>
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:14px;text-align:right;" id="r-n-calc"></div>
-
       <div id="r-n-div1" style="display:none;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-left:2px;">소급분 세금계산서</div>
       <div class="invoice-box">
         <div class="invoice-month-row">
@@ -758,6 +751,24 @@ if (typeof html2canvas === 'undefined') {
           <div class="invoice-amount" id="r-n-total"></div>
         </div>
       </div>
+
+      <div class="rent-mini">
+        <div class="rm-row">
+          <span class="rm-k">인상 전 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
+          <span class="rm-vb" id="r-n-rentBefore"></span>
+        </div>
+        <div class="rm-row">
+          <span class="rm-k">인상 후 임대료 (월)</span>
+          <span class="rm-va" id="r-n-rentAfter"></span>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;" id="r-n-detail-label">미지급 임차료 인상분 소급 내역</div>
+      <table class="daily-table retro-table" style="margin-bottom:8px;">
+        <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
+        <tbody id="r-n-monthBody"></tbody>
+      </table>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:14px;text-align:right;" id="r-n-calc"></div>
 
       <div class="ref-row" id="r-n-refrow" style="margin-bottom:14px;"></div>
 
@@ -923,6 +934,7 @@ function calcRetro(){
   // months: [{label, sub}] label=칩/테이블 표기, sub=구간 상세
   const months=[];
   let periodStr='';
+  let startDay2=null; // 모드2의 기산 시작 '일' (당월분 기산에 공유)
 
   if(retroMode===1){
     // 매월 1일~말일
@@ -982,6 +994,7 @@ function calcRetro(){
     if(!s2) return rse('소급 시작일을 입력해 주세요.');
     if(!e2) return rse('소급 종료일을 입력해 주세요.');
     const [sy,sm,sd]=s2.split('-').map(Number);
+    startDay2=sd;
     const [ey2,em2,ed2]=e2.split('-').map(Number);
     const startDate=new Date(sy,sm-1,sd);
     const endDate=new Date(ey2,em2-1,ed2);
@@ -1025,11 +1038,27 @@ function calcRetro(){
     const [ty,tm]=tmYm.split('-').map(Number);
     const tmVat=Math.round(tmRent*0.1);
     const diffOnly=document.getElementById('r-tm-diffonly').checked;
+
+    // 당월 기산 구간: 소급 기산일 유형에 맞춰 산정
+    let basisPeriod;
+    if(retroMode===2 && startDay2){
+      // 전월 startDay2일 ~ 당월 startDay2 전날
+      const curStart=new Date(ty, tm-1, startDay2);      // 당월 시작일
+      const prevStart=new Date(ty, tm-2, startDay2);     // 전월 시작일
+      const curEnd=new Date(curStart.getTime()-86400000);// 당월 시작일 전날
+      basisPeriod=`${ds(prevStart.getFullYear(),prevStart.getMonth()+1,prevStart.getDate())} ~ ${ds(curEnd.getFullYear(),curEnd.getMonth()+1,curEnd.getDate())}`;
+    }else{
+      // 당월 1일 ~ 말일
+      const tmLast=dim(ty,tm);
+      basisPeriod=`${ds(ty,tm,1)} ~ ${ds(ty,tm,tmLast)}`;
+    }
+
     const tmLast=dim(ty,tm);
     thisMonth={
       ym:`${ty}년 ${tm}월`, rent:tmRent, vat:tmVat, tot:tmRent+tmVat,
       diffOnly, payDiff:diff,
-      payPeriod:`${ds(ty,tm,1)}~${ds(ty,tm,tmLast)}`
+      payPeriod:`${ds(ty,tm,1)}~${ds(ty,tm,tmLast)}`,
+      basisPeriod
     };
   }
 
@@ -1053,6 +1082,20 @@ function calcRetro(){
   document.getElementById('r-monthBody').innerHTML=rows;
   document.getElementById('r-totalAmt').textContent=fmt(supply);
   document.getElementById('r-refRow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
+
+  // 결과 화면 당월분 표시
+  const tmResult=document.getElementById('r-tm-result');
+  if(thisMonth){
+    tmResult.style.display='';
+    document.getElementById('r-tmr-title').textContent=`당월 임차료 (${thisMonth.ym})`;
+    document.getElementById('r-tmr-basis').textContent=`기산 구간 ${thisMonth.basisPeriod}`;
+    document.getElementById('r-tmr-calc').textContent = thisMonth.diffOnly
+      ? `세금계산서 ${fmt(thisMonth.rent)} 전액 발행 · 실제 지급은 인상분 ${fmt(thisMonth.payDiff)}`
+      : `인상 후 전체 금액 ${fmt(thisMonth.rent)} 발행`;
+    document.getElementById('r-tmr-amt').innerHTML=fmt(thisMonth.rent)+'<span class="vat-note">(VAT 별도)</span>';
+  }else{
+    tmResult.style.display='none';
+  }
 
   document.getElementById('r-result').style.display='block';
   document.getElementById('r-result').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1119,6 +1162,7 @@ function calcRetro(){
     document.getElementById('r-tm-store').textContent=store?`［ ${store} ］`:'';
     document.getElementById('r-tm-metachips').innerHTML=
       `<span class="meta-chip">당월 ${tm.ym}</span>
+       <span class="meta-chip">기산 ${tm.basisPeriod}</span>
        <span class="meta-chip">인상 후 전체 금액 발행</span>`;
     document.getElementById('r-tm2-issue').textContent=`${issueStr} 이후`;
     document.getElementById('r-tm2-supply').textContent=fmt(tm.rent);
@@ -1137,7 +1181,7 @@ function calcRetro(){
     document.getElementById('r-tm2-refrow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
     document.getElementById('r-tm2-footer').textContent=bas?`근거자료: ${bas}`:'';
     document.getElementById('r-tm2-points').innerHTML=`
-      <div class="notice-point"><span class="pt-num">1</span><span>당월(${tm.ym}) 임차료 세금계산서로, <strong>인상 후 전체 금액</strong>으로 발행해 주시면 됩니다.</span></div>
+      <div class="notice-point"><span class="pt-num">1</span><span>당월(${tm.ym}) 임차료 세금계산서로, 기산 구간 <strong>${tm.basisPeriod}</strong>에 대해 <strong>인상 후 전체 금액</strong>으로 발행해 주시면 됩니다.</span></div>
       <div class="notice-point"><span class="pt-num">2</span><span>작성일자는 <strong>변경계약서 작성일(${issueStr}) 이후</strong>로 발행해 주시면 됩니다.</span></div>
       ${tmExtra}`;
   }else{
