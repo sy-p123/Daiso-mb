@@ -55,6 +55,7 @@ if (typeof html2canvas === 'undefined') {
   .result-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
   .meta-chip{font-size:12px;background:var(--accent-light);color:var(--accent);border-radius:20px;padding:4px 12px;font-weight:500;}
   .period-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:11px;margin-bottom:14px;}
+  .period-row.stack{grid-template-columns:1fr;gap:10px;}
   .period-box{border-radius:10px;padding:14px 16px;}
   .period-box.before{background:var(--before-bg);border-left:3px solid var(--before);}
   .period-box.after{background:var(--after-bg);border-left:3px solid var(--after);}
@@ -333,7 +334,7 @@ if (typeof html2canvas === 'undefined') {
     <div id="mgmt-body" style="display:none;margin-top:16px;">
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:14px;">
         <input type="checkbox" id="mgmt-vary-check" onchange="setMgmtVary(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
-        관리비도 이번에 함께 변경됩니다
+        <span id="mgmt-vary-label">관리비도 이번에 함께 변경됩니다</span>
       </label>
 
       <!-- 변동 없음: 한 칸 -->
@@ -348,20 +349,20 @@ if (typeof html2canvas === 'undefined') {
 
       <!-- 변동 있음: 변경일 + 기존/변경 -->
       <div id="mgmt-varying" style="display:none;">
-        <div class="field" style="margin-bottom:13px;">
+        <div class="field" style="margin-bottom:13px;" id="mgmt-date-field">
           <label id="label-mgmtChangeDate">관리비 변경일</label>
           <input type="date" id="mgmtChangeDate">
           <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">임대료 변경일이 자동 입력됩니다. 관리비 변경일이 다르면 직접 수정하세요.</div>
         </div>
         <div class="field-grid two" style="margin-bottom:0;">
           <div class="field">
-            <label>기존 관리비 (월·부가세 별도)</label>
+            <label id="mgmt-before-label">기존 관리비 (월·부가세 별도)</label>
             <div class="won-wrap">
               <input type="number" id="mgmtBefore" placeholder="0" min="0" oninput="updateKor('mgmtBefore','korMgmtBefore')">
               <span class="kor-amount" id="korMgmtBefore"></span>
             </div>
           </div>
-          <div class="field">
+          <div class="field" id="mgmt-after-wrap">
             <label>변경 관리비 (월·부가세 별도)</label>
             <div class="won-wrap">
               <input type="number" id="mgmtAfter" placeholder="0" min="0" oninput="updateKor('mgmtAfter','korMgmtAfter')">
@@ -401,7 +402,8 @@ if (typeof html2canvas === 'undefined') {
     <div class="section-label">산출 결과</div>
     <div class="result-meta" id="metaChips"></div>
 
-    <div class="period-row">
+    <div id="rentSectionLabel" style="display:none;font-size:11px;color:var(--ink-soft);margin-bottom:9px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">임대료 정산</div>
+    <div class="period-row stack">
       <div class="period-box before">
         <div class="period-tag" id="rtag-before">변경 전</div>
         <div class="period-dates" id="beforeDates"></div>
@@ -415,13 +417,6 @@ if (typeof html2canvas === 'undefined') {
         <div class="period-amount" id="afterAmt"></div>
       </div>
     </div>
-
-    <table class="daily-table">
-      <thead>
-        <tr><th>구분</th><th>월 임대료</th><th>÷ 총 일수</th><th>= 일별 단가</th></tr>
-      </thead>
-      <tbody id="dailyBody"></tbody>
-    </table>
 
     <div id="mgmt-result" style="display:none;"></div>
 
@@ -493,7 +488,7 @@ if (typeof html2canvas === 'undefined') {
       <div id="n-rent-label" style="display:none;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-left:2px;border-left:3px solid var(--accent);padding-left:8px;">임대료</div>
 
       <!-- 변경모드: 변경 전/후 박스 -->
-      <div class="period-row" id="n-period-row" style="margin-bottom:14px;">
+      <div class="period-row stack" id="n-period-row" style="margin-bottom:14px;">
         <div class="period-box before">
           <div class="period-tag" id="ntag-before">변경 전</div>
           <div class="period-dates" id="n-bdates"></div>
@@ -667,6 +662,77 @@ if (typeof html2canvas === 'undefined') {
     </div>
   </div>
 
+  <!-- 고정관리비 (선택) -->
+  <div class="card" id="r-mgmt-card">
+    <div class="section-label">고정관리비 <span style="color:var(--ink-soft);font-weight:500;letter-spacing:0;text-transform:none;font-size:11px;">(선택)</span></div>
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:2px;">
+      <input type="checkbox" id="r-mgmt-toggle" onchange="toggleRetroMgmt()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+      이 계약에 고정관리비가 있습니다
+    </label>
+
+    <div id="r-mgmt-body" style="display:none;margin-top:16px;">
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:14px;">
+        <input type="checkbox" id="r-mgmt-vary-check" onchange="setRetroMgmtVary(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+        관리비도 인상되어 소급됩니다
+      </label>
+
+      <!-- 인상 없음: 한 칸 -->
+      <div id="r-mgmt-fixed" class="field" style="margin-bottom:0;">
+        <label>월 고정관리비 (부가세 별도)</label>
+        <div class="won-wrap">
+          <input type="number" id="r-mgmtFlat" placeholder="0" min="0" oninput="updateKor('r-mgmtFlat','r-korMgmtFlat')">
+          <span class="kor-amount" id="r-korMgmtFlat"></span>
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">인상 없이 매월 동일하게 지급된 관리비입니다. (소급 인상분 없음)</div>
+      </div>
+
+      <!-- 인상 소급: 기존/인상 + 소급 기간 -->
+      <div id="r-mgmt-varying" style="display:none;">
+        <div class="field-grid two" style="margin-bottom:13px;">
+          <div class="field">
+            <label>기존 관리비 (월·부가세 별도)</label>
+            <div class="won-wrap">
+              <input type="number" id="r-mgmtBefore" placeholder="0" min="0" oninput="updateKor('r-mgmtBefore','r-korMgmtBefore')">
+              <span class="kor-amount" id="r-korMgmtBefore"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label>인상 후 관리비 (월·부가세 별도)</label>
+            <div class="won-wrap">
+              <input type="number" id="r-mgmtAfter" placeholder="0" min="0" oninput="updateKor('r-mgmtAfter','r-korMgmtAfter')">
+              <span class="kor-amount" id="r-korMgmtAfter"></span>
+            </div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">
+          <input type="checkbox" id="r-mgmt-samerange" checked onchange="toggleMgmtRange(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
+          관리비 소급 기간이 임대료와 동일합니다
+        </label>
+        <div id="r-mgmt-range" style="display:none;">
+          <div class="field-grid two" style="margin-bottom:0;" id="r-mgmt-range-m1">
+            <div class="field">
+              <label>관리비 소급 시작 (계약 종료일 다음달)</label>
+              <input type="month" id="r-mgmtStartMonth">
+            </div>
+            <div class="field">
+              <label>관리비 소급 종료 월</label>
+              <input type="month" id="r-mgmtLastMonth">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;margin-bottom:0;">
+        <label>세금계산서 발행 방식</label>
+        <div class="mode-group">
+          <button class="mode-btn active" id="r-mgmt-bill-sum" onclick="setRetroMgmtBill('sum')">합산 발행</button>
+          <button class="mode-btn" id="r-mgmt-bill-split" onclick="setRetroMgmtBill('split')">분리 발행 (임대료·관리비 각각)</button>
+        </div>
+        <div class="mode-hint visible" id="r-mgmt-bill-hint" style="margin-top:8px;">임대료와 관리비 소급분을 합쳐 한 건으로 발행합니다.</div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="section-label">변경계약서 작성일</div>
     <div class="field">
@@ -728,10 +794,17 @@ if (typeof html2canvas === 'undefined') {
     </table>
 
     <div class="total-row">
-      <span class="total-label">소급 인상분 합계 (공급가액)</span>
+      <span class="total-label" id="r-total-label">소급 인상분 합계 (공급가액)</span>
       <span class="total-amount" id="r-totalAmt"></span>
     </div>
     <div class="ref-row" id="r-refRow"></div>
+
+    <!-- 관리비 소급 (있을 때) -->
+    <div id="r-mgmt-result" style="display:none;margin-top:16px;">
+      <div class="divider"></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:9px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">고정관리비 소급</div>
+      <div id="r-mgmt-result-body"></div>
+    </div>
 
     <div id="r-tm-result" style="display:none;margin-top:16px;">
       <div class="divider"></div>
@@ -793,6 +866,10 @@ if (typeof html2canvas === 'undefined') {
         </div>
       </div>
 
+      <!-- 산출 내역 -->
+      <div id="r-n-breakdown-label" style="font-size:12px;font-weight:700;color:var(--ink);margin:18px 0 10px;padding-bottom:7px;border-bottom:1.5px solid var(--rule);">산출 내역</div>
+
+      <div id="r-n-rent-sub" style="display:none;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent);">임대료</div>
       <div class="rent-mini">
         <div class="rm-row">
           <span class="rm-k">인상 전 임대료 (월) <span class="vat-note">· VAT 별도</span></span>
@@ -804,12 +881,39 @@ if (typeof html2canvas === 'undefined') {
         </div>
       </div>
 
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;" id="r-n-detail-label">미지급 임차료 인상분 소급 내역</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;" id="r-n-detail-label">임차료 인상분 소급 내역</div>
       <table class="daily-table retro-table" style="margin-bottom:8px;">
         <thead><tr><th>소급 구간</th><th style="text-align:right;">소급 금액</th></tr></thead>
         <tbody id="r-n-monthBody"></tbody>
       </table>
       <div style="font-size:11px;color:var(--ink-soft);margin-bottom:14px;text-align:right;" id="r-n-calc"></div>
+
+      <!-- 관리비 소급 내역 (있을 때) -->
+      <div id="r-n-mgmt-detail" style="display:none;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>
+        <div class="rent-mini" id="r-n-mgmt-mini">
+          <div class="rm-row">
+            <span class="rm-k">인상 전 관리비 (월) <span class="vat-note">· VAT 별도</span></span>
+            <span class="rm-vb" id="r-n-mgmtBefore"></span>
+          </div>
+          <div class="rm-row">
+            <span class="rm-k">인상 후 관리비 (월)</span>
+            <span class="rm-va" id="r-n-mgmtAfter"></span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">고정관리비 인상분 소급 내역</div>
+        <div id="r-n-mgmt-body" style="margin-bottom:14px;"></div>
+      </div>
+
+      <!-- 분리 발행: 관리비 세금계산서 박스 (있을 때) -->
+      <div id="r-n-mgmt-invoice" style="display:none;">
+        <div style="font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 8px;padding-left:2px;">관리비 세금계산서</div>
+        <div class="invoice-box">
+          <div class="invoice-row"><div class="invoice-key">공급가액</div><div class="invoice-val" id="r-n-msupply"></div></div>
+          <div class="invoice-row"><div class="invoice-key">부가세액 (10%)</div><div class="invoice-val" id="r-n-mvat"></div></div>
+          <div class="invoice-row invoice-total-row"><div class="invoice-key">관리비 합계<small>공급가액 + 부가세</small></div><div class="invoice-amount" id="r-n-mtotal"></div></div>
+        </div>
+      </div>
 
       <div class="ref-row" id="r-n-refrow" style="margin-bottom:14px;"></div>
 
@@ -898,6 +1002,29 @@ function goStart() {
 // ===== 소급 계산 =====
 let retroData=null;
 let retroMode=1;
+// 소급 관리비 상태
+let rMgmtOn=false, rMgmtVary=false, rMgmtBill='sum', rMgmtSameRange=true;
+function toggleRetroMgmt(){
+  rMgmtOn=document.getElementById('r-mgmt-toggle').checked;
+  document.getElementById('r-mgmt-body').style.display=rMgmtOn?'':'none';
+}
+function setRetroMgmtVary(v){
+  rMgmtVary=v;
+  document.getElementById('r-mgmt-fixed').style.display=v?'none':'';
+  document.getElementById('r-mgmt-varying').style.display=v?'':'none';
+}
+function toggleMgmtRange(same){
+  rMgmtSameRange=same;
+  document.getElementById('r-mgmt-range').style.display=same?'none':'';
+}
+function setRetroMgmtBill(mode){
+  rMgmtBill=mode;
+  document.getElementById('r-mgmt-bill-sum').classList.toggle('active',mode==='sum');
+  document.getElementById('r-mgmt-bill-split').classList.toggle('active',mode==='split');
+  document.getElementById('r-mgmt-bill-hint').textContent = mode==='sum'
+    ? '임대료와 관리비 소급분을 합쳐 한 건으로 발행합니다.'
+    : '임대료 소급분, 관리비 소급분을 각각 나누어 발행합니다.';
+}
 function setRetroMode(m){
   retroMode=m;
   document.getElementById('r-mode-1').classList.toggle('active',m===1);
@@ -957,6 +1084,24 @@ function autoSetThisMonth(){
   }
   m++; if(m>12){m=1;y++;}
   ym.value=y+'-'+String(m).padStart(2,'0');
+}
+
+// 관리비 별도 소급 기간(월 단위) 월 목록 생성
+function buildRetroMonths(diffM, startId, lastId){
+  const sv=document.getElementById(startId).value;
+  const lv=document.getElementById(lastId).value;
+  if(!sv||!lv) return {err:'관리비 소급 시작/종료 월을 입력해 주세요.'};
+  const [sy,sm]=sv.split('-').map(Number);
+  const [ly,lm]=lv.split('-').map(Number);
+  if(ly*100+lm < sy*100+sm) return {err:'관리비 소급 종료 월이 시작 월보다 빠릅니다.'};
+  const arr=[]; let cy=sy,cm=sm;
+  while(cy*100+cm <= ly*100+lm){
+    const last=dim(cy,cm);
+    arr.push({label:`${ds(cy,cm,1)}~${ds(cy,cm,last)}`, sub:`${cy}년 ${cm}월`, amt:diffM, partial:false});
+    cm++; if(cm>12){cm=1;cy++;} if(arr.length>240) break;
+  }
+  const periodStr = arr.length===1 ? `${sy}년 ${sm}월` : `${sy}년 ${sm}월 ~ ${ly}년 ${lm}월`;
+  return {months:arr, hasPartial:false, periodStr};
 }
 
 function calcRetro(){
@@ -1069,6 +1214,45 @@ function calcRetro(){
   const [ccy,ccm,ccd]=cdv.split('-').map(Number);
   const issueStr=ds(ccy,ccm,ccd);
 
+  // ── 고정관리비 소급 (선택)
+  let rMgmt=null;
+  if(rMgmtOn){
+    if(rMgmtVary){
+      const mb=parseFloat(document.getElementById('r-mgmtBefore').value);
+      const ma=parseFloat(document.getElementById('r-mgmtAfter').value);
+      if(isNaN(mb)||mb<0) return rse('기존 관리비를 올바르게 입력해 주세요.');
+      if(isNaN(ma)||ma<0) return rse('인상 후 관리비를 올바르게 입력해 주세요.');
+      if(ma<=mb) return rse('인상 후 관리비가 기존 관리비보다 커야 합니다.');
+      const mDiff=ma-mb;
+      let mMonths=[], mPeriodStr, mHasPartial=false;
+      if(rMgmtSameRange){
+        // 임대료와 동일 기간 → 임대료 months 구조를 그대로 따라 부분월 일할 적용
+        mMonths=months.map(mo=>{
+          if(mo.partial){
+            mHasPartial=true;
+            return {label:mo.label, sub:mo.sub, partial:true, days:mo.days, base:mo.base,
+                    amt:Math.round((mDiff/mo.base)*mo.days)};
+          }
+          return {label:mo.label, sub:mo.sub, partial:false, amt:mDiff};
+        });
+        mPeriodStr=periodStr;
+      }else{
+        // 관리비 별도 소급 기간 → 관리비 자체로 월 목록 생성 (부분월 일할 포함)
+        const mr=buildRetroMonths(mDiff, 'r-mgmtStartMonth', 'r-mgmtLastMonth');
+        if(mr.err) return rse(mr.err);
+        mMonths=mr.months; mHasPartial=mr.hasPartial; mPeriodStr=mr.periodStr;
+      }
+      const mSupply=mMonths.reduce((s,x)=>s+x.amt,0);
+      const mCount=mMonths.length;
+      rMgmt={ vary:true, mb, ma, mDiff, mCount, mPeriodStr, months:mMonths, hasPartial:mHasPartial,
+              supply:mSupply, vat:Math.round(mSupply*0.1) };
+    }else{
+      const mf=parseFloat(document.getElementById('r-mgmtFlat').value);
+      if(isNaN(mf)||mf<0) return rse('월 고정관리비를 올바르게 입력해 주세요.');
+      rMgmt={ vary:false, mf, supply:0, vat:0 };
+    }
+  }
+
   // 이번 달 임차료 (선택)
   let thisMonth=null;
   if(thisMonthOn){
@@ -1124,6 +1308,33 @@ function calcRetro(){
   document.getElementById('r-totalAmt').textContent=fmt(supply);
   document.getElementById('r-refRow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
 
+  // 관리비 소급 결과 표시
+  const rmr=document.getElementById('r-mgmt-result');
+  document.getElementById('r-total-label').textContent = rMgmt ? '임대료 소급 인상분 합계 (공급가액)' : '소급 인상분 합계 (공급가액)';
+  if(rMgmt){
+    rmr.style.display='';
+    let inner='';
+    if(rMgmt.vary){
+      inner=`<div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);margin-bottom:10px;">
+        <div class="period-tag" style="color:var(--accent);">관리비 인상 소급 (${rMgmt.mPeriodStr})</div>
+        <div class="period-calc">${rMgmt.hasPartial ? `월 인상액 ${fmt(rMgmt.mDiff)} 기준 · 부분월 일수 비례` : `월 인상액 ${fmt(rMgmt.mDiff)} × ${rMgmt.mCount}개월`}</div>
+        <div class="period-amount" style="color:var(--accent);">${fmt(rMgmt.supply)}<span class="vat-note">(VAT 별도)</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 2px;font-size:13px;"><span style="color:var(--ink-soft);">임대료 소급 소계</span><span style="font-family:var(--mono);font-weight:600;">${fmt(supply)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 2px;font-size:13px;"><span style="color:var(--ink-soft);">관리비 소급 소계</span><span style="font-family:var(--mono);font-weight:600;">${fmt(rMgmt.supply)}</span></div>
+      <div class="total-row" style="margin-top:8px;"><span class="total-label">임대료+관리비 소급 합계 (공급가액)</span><span class="total-amount">${fmt(supply+rMgmt.supply)}</span></div>`;
+    }else{
+      inner=`<div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);">
+        <div class="period-tag" style="color:var(--accent);">고정관리비 (인상 없음)</div>
+        <div class="period-calc">월 ${fmt(rMgmt.mf)} · 소급 인상분 없음</div>
+        <div class="period-amount" style="color:var(--accent);">소급액 0원</div>
+      </div>`;
+    }
+    document.getElementById('r-mgmt-result-body').innerHTML=inner;
+  }else{
+    rmr.style.display='none';
+  }
+
   // 결과 화면 당월분 표시
   const tmResult=document.getElementById('r-tm-result');
   if(thisMonth){
@@ -1141,7 +1352,7 @@ function calcRetro(){
   document.getElementById('r-result').style.display='block';
   document.getElementById('r-result').scrollIntoView({behavior:'smooth',block:'start'});
 
-  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr,hasPartial,countLabel,months,thisMonth};
+  retroData={store,bas,periodStr,monthCount,diff,rb,ra,supply,vat,tot,issueStr,hasPartial,countLabel,months,thisMonth,rMgmt,rMgmtBill};
 
   // ── 안내문
   document.getElementById('r-noticeEmpty').style.display='none';
@@ -1152,45 +1363,118 @@ function calcRetro(){
      <span class="meta-chip">${countLabel}</span>`;
   document.getElementById('r-n-rentBefore').textContent=fmt(rb);
   document.getElementById('r-n-rentAfter').textContent=fmt(ra);
-  // 구간별 소급 내역 테이블
+  // 구간별 소급 내역 테이블 (부분월 없으면 한 줄 요약)
   let nrows='';
-  months.forEach(mo=>{
-    const note = mo.partial
-      ? `<div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">일할 ${fmt(diff)}÷${mo.base}일×${mo.days}일</div>`
-      : '';
-    nrows+=`<tr><td style="white-space:nowrap;">${mo.label}${note}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(mo.amt)}</strong></td></tr>`;
-  });
+  if(hasPartial){
+    months.forEach(mo=>{
+      const note = mo.partial
+        ? `<div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">일할 ${fmt(diff)}÷${mo.base}일×${mo.days}일</div>`
+        : '';
+      nrows+=`<tr><td style="white-space:nowrap;">${mo.label}${note}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(mo.amt)}</strong></td></tr>`;
+    });
+  }else{
+    nrows=`<tr><td style="white-space:nowrap;">${periodStr} (${monthCount}개월)</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(supply)}</strong></td></tr>`;
+  }
   document.getElementById('r-n-monthBody').innerHTML=nrows;
   document.getElementById('r-n-calc').textContent = hasPartial
     ? `월 인상액 ${fmt(diff)} 기준 · 부분월은 일수 비례 정산`
     : `월 인상액 ${fmt(diff)} × ${monthCount}개월`;
   document.getElementById('r-n-issue').textContent=issueStr;
-  document.getElementById('r-n-supply').textContent=fmt(supply);
-  document.getElementById('r-n-vat').textContent=fmt(vat);
-  document.getElementById('r-n-total').textContent=fmt(tot);
+
+  // 관리비 소급 반영 (합산/분리)
+  const mgmtDetail=document.getElementById('r-n-mgmt-detail');
+  const mgmtInvoice=document.getElementById('r-n-mgmt-invoice');
+  const div1=document.getElementById('r-n-div1');
+  const mSplit = rMgmt && rMgmt.vary && rMgmtBill==='split';
+  const mSum = rMgmt && rMgmt.vary && rMgmtBill==='sum';
+  const mFixed = rMgmt && !rMgmt.vary; // 인상 없음
+
+  // 관리비 소급 내역 표시 (인상 소급일 때만)
+  document.getElementById('r-n-rent-sub').style.display = (rMgmt && rMgmt.vary) ? '' : 'none';
+  if(rMgmt && rMgmt.vary){
+    mgmtDetail.style.display='';
+    document.getElementById('r-n-mgmtBefore').textContent=fmt(rMgmt.mb);
+    document.getElementById('r-n-mgmtAfter').textContent=fmt(rMgmt.ma);
+    let mrows='';
+    rMgmt.months.forEach(mo=>{
+      const note = mo.partial
+        ? `<div style="font-size:10px;color:var(--ink-soft);margin-top:2px;">일할 ${fmt(rMgmt.mDiff)}÷${mo.base}일×${mo.days}일</div>`
+        : '';
+      mrows+=`<tr><td style="white-space:nowrap;">${mo.label}${note}</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(mo.amt)}</strong></td></tr>`;
+    });
+    const mcalc = rMgmt.hasPartial
+      ? `월 인상액 ${fmt(rMgmt.mDiff)} 기준 · 부분월은 일수 비례 정산`
+      : `월 인상액 ${fmt(rMgmt.mDiff)} × ${rMgmt.mCount}개월`;
+    document.getElementById('r-n-mgmt-body').innerHTML=
+      `<table class="daily-table retro-table" style="margin-bottom:6px;"><tbody>${mrows}</tbody></table>
+       <div style="font-size:11px;color:var(--ink-soft);text-align:right;">${mcalc}</div>`;
+  }else{
+    mgmtDetail.style.display='none';
+  }
+
+  if(mSplit){
+    // 분리 발행: 임대료 명세 + 관리비 명세 별도
+    div1.style.display=''; div1.textContent='임대료 세금계산서';
+    document.getElementById('r-n-supply').textContent=fmt(supply);
+    document.getElementById('r-n-vat').textContent=fmt(vat);
+    document.getElementById('r-n-total').textContent=fmt(tot);
+    document.getElementById('r-n-total-label').innerHTML=`임대료 합계<small>공급가액 + 부가세</small>`;
+    mgmtInvoice.style.display='';
+    document.getElementById('r-n-msupply').textContent=fmt(rMgmt.supply);
+    document.getElementById('r-n-mvat').textContent=fmt(rMgmt.vat);
+    document.getElementById('r-n-mtotal').textContent=fmt(rMgmt.supply+rMgmt.vat);
+  }else if(mSum){
+    // 합산 발행: 임대료+관리비 합산 1건
+    const sSupply=supply+rMgmt.supply, sVat=Math.round((supply+rMgmt.supply)*0.1);
+    div1.style.display='none';
+    document.getElementById('r-n-supply').textContent=fmt(sSupply);
+    document.getElementById('r-n-vat').textContent=fmt(sVat);
+    document.getElementById('r-n-total').textContent=fmt(sSupply+sVat);
+    document.getElementById('r-n-total-label').innerHTML=`합계 금액 (임대료+관리비)<small>공급가액 + 부가세</small>`;
+    mgmtInvoice.style.display='none';
+  }else{
+    // 관리비 없음 또는 인상 없음 → 임대료만
+    div1.style.display = thisMonth ? '' : 'none';
+    document.getElementById('r-n-supply').textContent=fmt(supply);
+    document.getElementById('r-n-vat').textContent=fmt(vat);
+    document.getElementById('r-n-total').textContent=fmt(tot);
+    document.getElementById('r-n-total-label').innerHTML = thisMonth
+      ? `소급분 합계<small>공급가액 + 부가세</small>`
+      : `합계 금액<small>공급가액 + 부가세</small>`;
+    mgmtInvoice.style.display='none';
+  }
   document.getElementById('r-n-refrow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
   document.getElementById('r-n-footer').textContent=bas?`근거자료: ${bas}`:'';
 
   const tm=retroData.thisMonth;
   const subtabs=document.getElementById('r-notice-subtabs');
   const tmArea=document.getElementById('r-captureAreaTm');
-  const p1txt = hasPartial
-    ? `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 기간의 <strong>임차료 인상분</strong>을 소급 정산한 금액입니다. (계약 종료일이 월 중간인 경우 해당 월은 일수 비례로 계산)`
-    : `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 임차료 인상분</strong>을 소급 정산한 금액입니다.`;
 
-  // ── 소급분 영역 (항상)
-  const soLabel = tm ? '소급분' : '';
+  // ── 소급분 영역 제목/유의사항
   document.getElementById('r-n-title').innerHTML = tm
     ? `세금계산서 발행 안내<span style="display:block;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:600;color:var(--accent);margin-top:6px;">소급분</span>`
     : `세금계산서 발행 안내`;
-  document.getElementById('r-n-div1').style.display = tm ? '' : 'none';
-  document.getElementById('r-n-total-label').innerHTML = tm
-    ? `소급분 합계<small>공급가액 + 부가세</small>`
-    : `합계 금액<small>공급가액 + 부가세</small>`;
-  document.getElementById('r-n-points').innerHTML=`
-    <div class="notice-point"><span class="pt-num">1</span><span>${p1txt}</span></div>
-    <div class="notice-point"><span class="pt-num">2</span><span>소급분 세금계산서는 위 <strong>합계 금액 기준 1건</strong>을 발행해 주시면 됩니다.</span></div>
-    <div class="notice-point"><span class="pt-num">3</span><span>소급분 세금계산서 작성일자는 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
+
+  // 유의사항 (관리비/발행방식 반영)
+  // 1번: 소급 배경(관리비 포함) + 작성일자 안내 통합
+  const mIncluded = rMgmt && rMgmt.vary;
+  const itemTxt = mIncluded ? '임차료 및 고정관리비 인상분' : '임차료 인상분';
+  const p1full = hasPartial
+    ? `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 기간의 <strong>${itemTxt}</strong>을 소급 정산한 금액입니다. (계약 종료일이 월 중간인 경우 해당 월은 일수 비례로 계산)`
+    : `변경계약서 접수가 지연되어, 인상 전 금액으로 지급된 <strong>${monthCount}개월분의 ${itemTxt}</strong>을 소급 정산한 금액입니다.`;
+  let rpts=`<div class="notice-point"><span class="pt-num">1</span><span>${p1full} 세금계산서 작성일자는 <strong>반드시 변경계약서 작성일(${issueStr})과 동일하게</strong> 발행해 주셔야 합니다.</span></div>`;
+  let rno=2;
+  if(mSplit){
+    rpts+=`<div class="notice-point"><span class="pt-num">${rno++}</span><span>세금계산서는 <strong>임대료와 고정관리비를 각각 분리 발행</strong>해 주셔야 합니다. (임대료 1건, 관리비 1건)</span></div>`;
+  }else if(mSum){
+    rpts+=`<div class="notice-point"><span class="pt-num">${rno++}</span><span>세금계산서는 <strong>임대료와 관리비 인상분을 합산</strong>한 위 합계 금액 기준 <strong>1건</strong>을 발행해 주시면 됩니다.</span></div>`;
+  }else{
+    rpts+=`<div class="notice-point"><span class="pt-num">${rno++}</span><span>소급분 세금계산서는 위 <strong>합계 금액 기준 1건</strong>을 발행해 주시면 됩니다.</span></div>`;
+    if(mFixed){
+      rpts+=`<div class="notice-point"><span class="pt-num">${rno++}</span><span>고정관리비(월 ${fmt(rMgmt.mf)})는 인상이 없어 <strong>소급 대상이 아닙니다</strong>.</span></div>`;
+    }
+  }
+  document.getElementById('r-n-points').innerHTML=rpts;
 
   if(tm){
     // ── 당월분 영역 + 탭
@@ -1296,9 +1580,15 @@ function applyTypeLabels() {
 
   // 승계 모드: 발행월 카드 숨김 (안내문에서 자동 규칙 적용)
   document.getElementById('issuemonth-wrap').style.display = isT ? 'none' : '';
-  // 승계 모드: 고정관리비 카드 숨김 (변경 모드 전용 기능)
-  document.getElementById('mgmt-card').style.display = isT ? 'none' : '';
-  // 승계 모드는 단일 임대료 비교가 아니므로 지급조건/발행월 카드 의미 약함 → 지급조건은 유지(선/후불 표시용 X), 일단 변경모드만 노출
+  // 고정관리비 카드: 두 모드 모두 사용 (승계는 승계일 기준으로 동일 적용)
+  document.getElementById('mgmt-card').style.display = '';
+  document.getElementById('mgmt-vary-label').textContent = isT
+    ? '고정관리비도 승계 시점에 함께 정산됩니다'
+    : '관리비도 이번에 함께 변경됩니다';
+  // 승계는 변경일=승계일로 고정 → 관리비 변경일 입력 숨김
+  document.getElementById('mgmt-date-field').style.display = isT ? 'none' : '';
+  document.getElementById('mgmt-before-label').textContent = isT ? '월 고정관리비 (부가세 별도)' : '기존 관리비 (월·부가세 별도)';
+  document.getElementById('mgmt-after-wrap').style.display = isT ? 'none' : '';
   document.getElementById('transfer-subtabs').style.display = isT ? '' : 'none';
 }
 
@@ -1482,7 +1772,22 @@ function calculate(){
 
   // ── 고정관리비 계산 (변경 모드 전용, 승계 모드는 관리비 UI 숨김)
   let mgmt=null;
-  if(mgmtOn && !isT){
+  if(mgmtOn && isT){
+    // ── 승계 모드: 관리비도 승계일 기준으로 기존/신규 임대인 분할
+    if(mgmtVary){
+      // 월 고정관리비 1칸(mgmtBefore) 사용, 승계일로 분할
+      const mf=parseFloat(document.getElementById('mgmtBefore').value);
+      if(isNaN(mf)||mf<=0) return se('월 고정관리비를 올바르게 입력해 주세요.');
+      const mab=Math.round((mf/total)*bd), maa=Math.round((mf/total)*ad);
+      mgmt={ vary:true, isT:true, mb:mf, ma:mf, mbd:bd, mad:ad,
+             mcdStr:cdStr, mbEndStr:bdEndStr, mab, maa,
+             supply:mab+maa, psStr, peStr };
+    }else{
+      const mf=parseFloat(document.getElementById('mgmtFlat').value);
+      if(isNaN(mf)||mf<0) return se('월 고정관리비를 올바르게 입력해 주세요.');
+      mgmt={ vary:false, isT:true, mf, supply:mf, days:total, psStr, peStr };
+    }
+  }else if(mgmtOn && !isT){
     if(mgmtVary){
       const mb=parseFloat(document.getElementById('mgmtBefore').value);
       const ma=parseFloat(document.getElementById('mgmtAfter').value);
@@ -1508,7 +1813,6 @@ function calculate(){
       const mf=parseFloat(document.getElementById('mgmtFlat').value);
       if(isNaN(mf)||mf<0) return se('월 고정관리비를 올바르게 입력해 주세요.');
       const mdp=Math.round(mf/total);
-      const msupply=Math.round((mf/total)*total); // = mf 근사, 일할 일관성 위해
       mgmt={ vary:false, mf, mdp, supply:mf, days:total, psStr, peStr };
     }
   }
@@ -1528,11 +1832,6 @@ function calculate(){
   document.getElementById('afterCalc').textContent=`${fmt(ra)} ÷ ${total}일 × ${ad}일`;
   document.getElementById('afterAmt').innerHTML=fmt(aa)+'<span class="vat-note">(VAT 별도)</span>';
 
-  document.getElementById('dailyBody').innerHTML = isT
-    ? `<tr><td><span class="tag-a">월 임대료</span></td><td>${fmt(rb)}</td><td>${total}일</td><td><strong>${fmt(dpbR).replace('원','원/일')}</strong></td></tr>`
-    : `<tr><td><span class="tag-b">${labelB}</span></td><td>${fmt(rb)}</td><td>${total}일</td><td><strong>${fmt(dpbR).replace('원','원/일')}</strong></td></tr>
-       <tr><td><span class="tag-a">${labelA}</span></td><td>${fmt(ra)}</td><td>${total}일</td><td><strong>${fmt(dpaR).replace('원','원/일')}</strong></td></tr>`;
-
   // 결과 합계 (공급가액)
   const rentSupply = ab+aa;
   const mgmtSupply = mgmt ? mgmt.supply : 0;
@@ -1540,19 +1839,20 @@ function calculate(){
 
   // 관리비 결과 표시 영역
   const mgmtResult=document.getElementById('mgmt-result');
+  document.getElementById('rentSectionLabel').style.display = mgmt ? '' : 'none';
   if(mgmt){
     let inner='';
     if(mgmt.vary){
       inner=`
-        <div class="period-row" style="margin-bottom:10px;">
+        <div class="period-row stack" style="margin-bottom:10px;">
           <div class="period-box before">
-            <div class="period-tag">관리비 (변경 전)</div>
+            <div class="period-tag">${isT?'기존 임대인 관리비':'관리비 (변경 전)'}</div>
             <div class="period-dates">${mgmt.psStr} ~ ${mgmt.mbEndStr} (${mgmt.mbd}일)</div>
             <div class="period-calc">${fmt(mgmt.mb)} ÷ ${total}일 × ${mgmt.mbd}일</div>
             <div class="period-amount">${fmt(mgmt.mab)}<span class="vat-note">(VAT 별도)</span></div>
           </div>
           <div class="period-box after">
-            <div class="period-tag">관리비 (변경 후)</div>
+            <div class="period-tag">${isT?'신규 임대인 관리비':'관리비 (변경 후)'}</div>
             <div class="period-dates">${mgmt.mcdStr} ~ ${mgmt.peStr} (${mgmt.mad}일)</div>
             <div class="period-calc">${fmt(mgmt.ma)} ÷ ${total}일 × ${mgmt.mad}일</div>
             <div class="period-amount">${fmt(mgmt.maa)}<span class="vat-note">(VAT 별도)</span></div>
@@ -1702,10 +2002,10 @@ function renderChangeNotice(){
   document.getElementById('ntag-before').textContent='변경 전';
   document.getElementById('ntag-after').textContent='변경 후';
   document.getElementById('n-bdates').textContent=`${d.old.dates} (${d.bd}일)`;
-  document.getElementById('n-bcalc').textContent=`${fmt(d.rb)} ÷ ${d.total}일 × ${d.bd}일\n= ${fmt(d.dpbR).replace('원','원/일')} × ${d.bd}일`;
+  document.getElementById('n-bcalc').textContent=`${fmt(d.rb)} ÷ ${d.total}일 × ${d.bd}일`;
   document.getElementById('n-bamt').innerHTML=fmt(d.old.supply)+'<span class="vat-note">(VAT 별도)</span>';
   document.getElementById('n-adates').textContent=`${d.new.dates} (${d.ad}일)`;
-  document.getElementById('n-acalc').textContent=`${fmt(d.ra)} ÷ ${d.total}일 × ${d.ad}일\n= ${fmt(d.dpaR).replace('원','원/일')} × ${d.ad}일`;
+  document.getElementById('n-acalc').textContent=`${fmt(d.ra)} ÷ ${d.total}일 × ${d.ad}일`;
   document.getElementById('n-aamt').innerHTML=fmt(d.new.supply)+'<span class="vat-note">(VAT 별도)</span>';
 
   // 관리비 표시 + 금액 합산/분리
@@ -1718,7 +2018,7 @@ function renderChangeNotice(){
     mgmtSupply=d.mgmt.supply;
     let inner='<div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>';
     if(d.mgmt.vary){
-      inner+=`<div class="period-row">
+      inner+=`<div class="period-row stack">
         <div class="period-box before">
           <div class="period-tag">관리비 (변경 전)</div>
           <div class="period-dates">${d.mgmt.psStr} ~ ${d.mgmt.mbEndStr} (${d.mgmt.mbd}일)</div>
@@ -1813,7 +2113,6 @@ function renderTransferNotice(){
   // 상대방 금액 비노출: 변경전/후 2박스 숨기고 단일 박스만
   document.getElementById('n-period-row').style.display='none';
   document.getElementById('n-single-box').style.display='';
-  document.getElementById('n-mgmt-box').style.display='none';
 
   document.getElementById('n-metachips').innerHTML=
     `<span class="meta-chip">기산 기간 ${d.psStr} ~ ${d.peStr}</span>
@@ -1822,10 +2121,50 @@ function renderTransferNotice(){
 
   document.getElementById('n-single-tag').textContent=`${partyName} 정산분`;
   document.getElementById('n-single-dates').textContent=`${party.dates} (${party.days}일)`;
-  document.getElementById('n-single-calc').textContent=`${fmt(party.rent)} ÷ ${d.total}일 × ${party.days}일\n= ${fmt(party.dpR).replace('원','원/일')} × ${party.days}일`;
+  document.getElementById('n-single-calc').textContent=`${fmt(party.rent)} ÷ ${d.total}일 × ${party.days}일`;
   document.getElementById('n-single-amt').innerHTML=fmt(party.supply)+'<span class="vat-note">(VAT 별도)</span>';
 
-  fillInvoice(party.supply, party.vat, party.tot);
+  // ── 고정관리비 (승계): 해당 임대인 몫만 표시
+  const mgmtBox=document.getElementById('n-mgmt-box');
+  let mSupply=0, tSplit=false;
+  if(d.mgmt){
+    tSplit = d.mgmtBill==='split';
+    if(d.mgmt.vary){
+      mSupply = isOld ? d.mgmt.mab : d.mgmt.maa;
+      mgmtBox.innerHTML=`
+        <div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>
+        <div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);">
+          <div class="period-tag" style="color:var(--accent);">${partyName} 관리비 정산분</div>
+          <div class="period-dates">${party.dates} (${party.days}일)</div>
+          <div class="period-calc">${fmt(d.mgmt.mb)} ÷ ${d.total}일 × ${party.days}일</div>
+          <div class="period-amount" style="color:var(--accent);">${fmt(mSupply)}<span class="vat-note">(VAT 별도)</span></div>
+        </div>`;
+    }else{
+      // 변동 없음: 월 관리비를 일수로 나눠 각자 몫
+      mSupply = Math.round((d.mgmt.mf/d.total)*party.days);
+      mgmtBox.innerHTML=`
+        <div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>
+        <div class="period-box after" style="border-left-color:var(--accent-mid);background:var(--accent-light);">
+          <div class="period-tag" style="color:var(--accent);">${partyName} 관리비 정산분</div>
+          <div class="period-dates">${party.dates} (${party.days}일)</div>
+          <div class="period-calc">${fmt(d.mgmt.mf)} ÷ ${d.total}일 × ${party.days}일</div>
+          <div class="period-amount" style="color:var(--accent);">${fmt(mSupply)}<span class="vat-note">(VAT 별도)</span></div>
+        </div>`;
+    }
+    mgmtBox.style.display='';
+    document.getElementById('n-rent-label').style.display='';
+  }else{
+    mgmtBox.style.display='none';
+    document.getElementById('n-rent-label').style.display='none';
+  }
+
+  // 금액 명세: 합산 / 분리
+  if(d.mgmt && tSplit){
+    fillInvoiceSplit(party.supply, Math.round(party.supply*0.1), mSupply, Math.round(mSupply*0.1));
+  }else{
+    const sSup=party.supply+mSupply, sVat=Math.round(sSup*0.1);
+    fillInvoice(sSup, sVat, sSup+sVat);
+  }
 
   // 발행월: 기존=매매일, 신규=제약없음
   const mrow=document.getElementById('n-invoice-month-row');
@@ -1842,16 +2181,20 @@ function renderTransferNotice(){
   document.getElementById('n-refrow').innerHTML=d.bas?`<span>근거자료</span>  ${d.bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
   document.getElementById('n-footer').textContent=d.bas?`근거자료: ${d.bas}`:'';
 
+  const itemWord = d.mgmt ? '임대료와 고정관리비' : '임대료';
+  const billTxt = (d.mgmt && tSplit)
+    ? `세금계산서는 <strong>임대료 1장, 관리비 1장으로 나누어 2장 발행</strong>해 주시면 됩니다.`
+    : `세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.`;
   let pts='';
   if(isOld){
     pts=`
-      <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약이 승계되어, <strong>매매(승계)일 전일까지의 임대료</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
-      <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
+      <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약이 승계되어, <strong>매매(승계)일 전일까지의 ${itemWord}</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>${billTxt}</span></div>
       <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>매도일(${d.cdStr})을 넘기지 않는 범위</strong>에서 편하신 날짜에 발행해 주시면 됩니다.</span></div>`;
   }else{
     pts=`
-      <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약 승계에 따라, <strong>매매(승계)일부터 기간 종료일까지의 임대료</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
-      <div class="notice-point"><span class="pt-num">2</span><span>세금계산서는 위 <strong>합계 금액 기준 1장</strong>을 발행해 주시면 됩니다.</span></div>
+      <div class="notice-point"><span class="pt-num">1</span><span>임대차 계약 승계에 따라, <strong>매매(승계)일부터 기간 종료일까지의 ${itemWord}</strong>를 일수 기준으로 정산한 금액입니다.</span></div>
+      <div class="notice-point"><span class="pt-num">2</span><span>${billTxt}</span></div>
       <div class="notice-point"><span class="pt-num">3</span><span>발행일은 <strong>매도일(${d.cdStr}) 이후</strong>라면 편하신 날짜에 발행해 주시면 됩니다.</span></div>`;
   }
   document.getElementById('n-points').innerHTML=pts;
