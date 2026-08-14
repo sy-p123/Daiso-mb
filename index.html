@@ -15,7 +15,7 @@ if (typeof html2canvas === 'undefined') {
 }
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
   :root {
     --ink:#1a1a2e;--ink-soft:#4a4a6a;--rule:#d0cfe8;--bg:#f8f7fc;
     --surface:#fff;--accent:#5b4fcf;--accent-light:#ede9ff;--accent-mid:#8b7fd4;
@@ -33,7 +33,7 @@ if (typeof html2canvas === 'undefined') {
   .container{max-width:720px;margin:0 auto;overflow-x:hidden;}
   .header{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid var(--ink);}
   .header-eyebrow{font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:9px;}
-  .header h1{font-family:'Noto Serif KR',serif;font-size:25px;font-weight:700;color:var(--ink);}
+  .header h1{font-family:'Noto Sans KR',sans-serif;font-size:25px;font-weight:800;letter-spacing:-.5px;color:var(--ink);}
   .header-sub{margin-top:6px;font-size:13px;color:var(--ink-soft);}
   .card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:24px 28px;margin-bottom:16px;overflow:hidden;}
   .section-label{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent-mid);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
@@ -59,21 +59,21 @@ if (typeof html2canvas === 'undefined') {
   .period-box{border-radius:10px;padding:14px 16px;}
   .period-box.before{background:var(--before-bg);border-left:3px solid var(--before);}
   .period-box.after{background:var(--after-bg);border-left:3px solid var(--after);}
-  .period-tag{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+  .period-tag{font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
   .before .period-tag{color:var(--before);}.after .period-tag{color:var(--after);}
-  .period-dates{font-size:13px;color:var(--ink-soft);margin-bottom:5px;}
+  .period-dates{font-size:14px;color:var(--ink-soft);margin-bottom:5px;}
   .period-calc{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:6px;line-height:1.6;white-space:pre-line;}
-  .period-amount{font-family:var(--mono);font-size:18px;font-weight:600;}
+  .period-amount{font-family:var(--mono);font-size:20px;font-weight:600;}
   .before .period-amount{color:var(--before);}.after .period-amount{color:var(--after);}
-  .vat-note{font-family:'Noto Sans KR',sans-serif;font-size:11px;font-weight:400;color:var(--ink-soft);margin-left:4px;}
+  .vat-note{font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:400;color:var(--ink-soft);margin-left:4px;}
   .daily-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;}
-  .daily-table th{background:var(--bg);color:var(--ink-soft);font-weight:600;padding:7px 11px;text-align:left;border-bottom:1px solid var(--rule);}
-  .daily-table td{padding:9px 11px;border-bottom:1px solid var(--rule);font-family:var(--mono);}
+  .daily-table th{background:var(--bg);color:var(--ink-soft);font-weight:600;font-size:12.5px;padding:8px 11px;text-align:left;border-bottom:1px solid var(--rule);}
+  .daily-table td{padding:10px 11px;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:13.5px;}
   .daily-table tr:last-child td{border-bottom:none;}
   @media(max-width:420px){.retro-table th,.retro-table td{padding:8px 7px;font-size:11px;}}
   /* 소급 안내문: 인상 전후 미니 리스트 */
   .rent-mini{background:var(--bg);border:1px solid var(--rule);border-radius:9px;overflow:hidden;margin-bottom:14px;}
-  .rent-mini .rm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 15px;font-size:13px;gap:12px;}
+  .rent-mini .rm-row{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;font-size:14px;gap:12px;}
   .rent-mini .rm-row:first-child{border-bottom:1px solid var(--rule);}
   .rent-mini .rm-k{color:var(--ink-soft);}
   .rent-mini .rm-vb{font-family:var(--mono);color:var(--before);font-weight:600;white-space:nowrap;}
@@ -106,11 +106,11 @@ if (typeof html2canvas === 'undefined') {
   .notice-sheet{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:28px 26px;}
   .notice-header{text-align:center;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid var(--ink);}
   .notice-header .eyebrow{font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:9px;}
-  .notice-header h2{font-family:'Noto Serif KR',serif;font-size:21px;font-weight:700;color:var(--ink);}
+  .notice-header h2{font-family:'Noto Sans KR',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.3px;color:var(--ink);}
   .notice-header .n-store{margin-top:10px;font-size:15px;font-weight:600;color:var(--accent);}
   .notice-card{background:var(--bg);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
-  .notice-card .nc-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent-mid);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
-  .notice-point{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13.5px;line-height:1.65;color:var(--ink);}
+  .notice-card .nc-label{font-size:11.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent-mid);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
+  .notice-point{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--rule);font-size:14.5px;line-height:1.7;color:var(--ink);}
   .notice-point:last-child{border-bottom:none;}
   .pt-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-light);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
   .notice-footer{text-align:center;font-size:11px;color:var(--ink-soft);padding-top:6px;}
@@ -138,29 +138,36 @@ if (typeof html2canvas === 'undefined') {
   #r-captureArea .invoice-box{margin-bottom:10px;}
   #r-captureArea .invoice-month-row{padding:10px 16px;}
   #r-captureArea .invoice-row{padding:8px 16px;}
-  #r-captureArea .invoice-month{font-size:16px;}
+  #r-captureArea .invoice-month{font-size:20px;}
   #r-captureArea #r-n-countbanner{padding:9px 16px !important;margin-bottom:10px !important;}
   #r-captureArea #r-n-div2{margin-top:12px !important;}
   #r-captureArea .ref-row{margin-bottom:10px !important;padding:7px 13px;}
   #r-captureArea .notice-card{padding:14px 16px;margin-bottom:10px;}
   #r-captureArea .notice-card .nc-label{margin-bottom:9px;padding-bottom:6px;}
-  #r-captureArea .notice-point{padding:7px 0;font-size:12.5px;line-height:1.5;gap:9px;}
+  #r-captureArea .notice-point{padding:10px 0;font-size:14.5px;line-height:1.7;gap:11px;}
+  /* 안내문 내 작은 라벨·계산식 가독성 상향 (임대인 배포용) */
+  #r-captureArea #r-n-detail-label,
+  #r-captureArea #r-n-calc,
+  #r-captureArea #r-n-mgmt-detail > div[style*="font-size:11px"],
+  #r-captureArea #r-n-mgmt-body > div{font-size:12.5px !important;}
+  #r-captureArea #r-n-breakdown-label{font-size:12.5px !important;}
+  #r-captureArea .notice-card .nc-label{font-size:12px !important;}
   #r-captureArea .notice-footer{padding-top:4px;}
   #r-captureArea .rent-mini + #r-n-detail-label,#r-captureArea #r-n-detail-label{margin-bottom:6px !important;}
   /* 금액 명세 (공급가/부가세/합계) - 밝은 테마, 세로 행 */
   .invoice-box{background:var(--accent-light);border:1px solid #d6cffb;border-radius:12px;overflow:hidden;margin-bottom:14px;}
   .invoice-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 18px;background:#e2dcfa;border-bottom:1px solid #d6cffb;}
-  .invoice-mlabel{font-size:13px;font-weight:600;color:var(--accent);line-height:1.4;}
-  .invoice-mlabel small{display:block;font-size:11px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
-  .invoice-month{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);letter-spacing:-.3px;flex-shrink:0;}
+  .invoice-mlabel{font-size:14.5px;font-weight:600;color:var(--accent);line-height:1.4;}
+  .invoice-mlabel small{display:block;font-size:12.5px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
+  .invoice-month{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-.3px;flex-shrink:0;}
   .invoice-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 18px;}
   .invoice-row:not(:last-child){border-bottom:1px solid #d6cffb;}
-  .invoice-key{font-size:13px;font-weight:600;color:var(--ink-soft);line-height:1.4;}
-  .invoice-key small{display:block;font-size:11px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
-  .invoice-val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);flex-shrink:0;letter-spacing:-.3px;}
+  .invoice-key{font-size:14.5px;font-weight:600;color:var(--ink-soft);line-height:1.4;}
+  .invoice-key small{display:block;font-size:12.5px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
+  .invoice-val{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--ink);flex-shrink:0;letter-spacing:-.3px;}
   .invoice-total-row{background:#fff;}
   .invoice-total-row .invoice-key{color:var(--accent);}
-  .invoice-amount{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-.5px;flex-shrink:0;}
+  .invoice-amount{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--accent);letter-spacing:-.5px;flex-shrink:0;}
   /* 선불/후불 */
   .pay-group{display:flex;gap:6px;}
   .pay-btn{flex:1;padding:8px 0;border:1.5px solid var(--rule);border-radius:7px;background:var(--bg);color:var(--ink-soft);font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;text-align:center;}
@@ -1567,7 +1574,7 @@ function retroFileName(){
 async function saveRetroImage(){
   if(typeof html2canvas==='undefined'){document.getElementById('r-share-hint').textContent='이미지 모듈을 불러오지 못했어요. 모바일 브라우저에서 열어 주세요.';return;}
   try{
-    const canvas=await html2canvas(retroActiveArea(),{scale:2,backgroundColor:'#ffffff'});
+    const canvas=await html2canvas(retroActiveArea(),{scale:3,backgroundColor:'#ffffff'});
     const link=document.createElement('a');link.download=retroFileName();link.href=canvas.toDataURL('image/png');
     document.body.appendChild(link);link.click();document.body.removeChild(link);
   }catch(e){document.getElementById('r-share-hint').textContent='이미지 저장 중 문제가 발생했습니다.';}
@@ -1575,7 +1582,7 @@ async function saveRetroImage(){
 async function shareRetroImage(){
   if(typeof html2canvas==='undefined'){document.getElementById('r-share-hint').textContent='이미지 모듈을 불러오지 못했어요. 모바일 브라우저에서 열어 주세요.';return;}
   try{
-    const canvas=await html2canvas(retroActiveArea(),{scale:2,backgroundColor:'#ffffff'});
+    const canvas=await html2canvas(retroActiveArea(),{scale:3,backgroundColor:'#ffffff'});
     const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
     const file=new File([blob],retroFileName(),{type:'image/png'});
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
@@ -2196,11 +2203,11 @@ function renderTransferNotice(){
   const mrow=document.getElementById('n-invoice-month-row');
   if(isOld){
     mrow.style.display='';
-    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이내로 작성 (그 이전 날짜도 가능)</small>`;
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이내로 작성</small>`;
     document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} 이전`;
   }else{
     mrow.style.display='';
-    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이후로 작성 (그 이후 날짜도 가능)</small>`;
+    document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이후로 작성</small>`;
     document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} 이후`;
   }
 
@@ -2259,7 +2266,7 @@ function ensureLib(){
 }
 async function buildCanvas(){
   const area=document.getElementById('captureArea');
-  return await html2canvas(area,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+  return await html2canvas(area,{scale:3,backgroundColor:'#ffffff',useCORS:true});
 }
 function fileName(){
   const d=transferData;
