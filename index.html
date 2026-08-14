@@ -17,7 +17,7 @@ if (typeof html2canvas === 'undefined') {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
   :root {
-    --ink:#1a1a2e;--ink-soft:#4a4a6a;--rule:#d0cfe8;--bg:#f8f7fc;
+    --ink:#1a1a2e;--ink-soft:#5a6478;--rule:#dde1e9;--bg:#f5f6f9;
     --surface:#fff;--accent:#1e3a5f;--accent-light:#eaeef5;--accent-mid:#4a6b96;
     --before:#c84b31;--before-bg:#fff2ef;--after:#2a7d4f;--after-bg:#edf7f2;
     --mono:'JetBrains Mono',monospace;
@@ -50,7 +50,7 @@ if (typeof html2canvas === 'undefined') {
   .won-wrap::before{content:'₩';position:absolute;left:11px;top:12px;font-size:13px;color:var(--ink-soft);pointer-events:none;}
   .kor-amount{position:absolute;bottom:8px;left:13px;font-size:11px;color:var(--accent-mid);font-weight:500;pointer-events:none;min-height:14px;}
   .calc-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px;}
-  .calc-btn:hover{background:#4a3db8;}.calc-btn:active{transform:scale(.99);}
+  .calc-btn:hover{background:#16304f;}.calc-btn:active{transform:scale(.99);}
   .result-box{display:none;}
   .result-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
   .meta-chip{font-size:12px;background:var(--accent-light);color:var(--accent);border-radius:20px;padding:4px 12px;font-weight:500;}
@@ -126,7 +126,7 @@ if (typeof html2canvas === 'undefined') {
   .notice-empty{text-align:center;padding:56px 20px;color:var(--ink-soft);font-size:14px;line-height:1.7;}
   .notice-empty .ei{font-size:36px;margin-bottom:13px;opacity:.4;}
   .go-btn{display:inline-block;margin-top:15px;padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
-  .go-btn:hover{background:#4a3db8;}
+  .go-btn:hover{background:#16304f;}
   .mode-group{display:flex;gap:6px;flex-wrap:wrap;}
   .mode-btn{padding:7px 14px;border:1.5px solid var(--rule);border-radius:7px;background:var(--bg);color:var(--ink-soft);font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;}
   .mode-btn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
@@ -165,7 +165,7 @@ if (typeof html2canvas === 'undefined') {
   #r-captureArea .rent-mini + #r-n-detail-label,#r-captureArea #r-n-detail-label{margin-bottom:6px !important;}
   /* 금액 명세 (공급가/부가세/합계) - 밝은 테마, 세로 행 */
   .invoice-box{background:var(--accent-light);border:1px solid #c9d5e6;border-radius:12px;overflow:hidden;margin-bottom:14px;}
-  .invoice-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 18px;background:#e2dcfa;border-bottom:1px solid #c9d5e6;}
+  .invoice-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 18px;background:#dbe3ee;border-bottom:1px solid #c9d5e6;}
   .invoice-mlabel{font-size:14.5px;font-weight:600;color:var(--accent);line-height:1.4;}
   .invoice-mlabel small{display:block;font-size:12.5px;color:var(--accent-mid);font-weight:400;margin-top:2px;}
   .invoice-month{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-.3px;flex-shrink:0;}
@@ -198,9 +198,9 @@ if (typeof html2canvas === 'undefined') {
   .action-bar{display:flex;gap:8px;margin-top:16px;}
   .action-btn{flex:1;padding:12px 8px;border:none;border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px;}
   .action-btn.save{background:var(--accent-light);color:var(--accent);}
-  .action-btn.save:hover{background:#ddd6ff;}
+  .action-btn.save:hover{background:#d5dfec;}
   .action-btn.share{background:var(--accent);color:#fff;}
-  .action-btn.share:hover{background:#4a3db8;}
+  .action-btn.share:hover{background:#16304f;}
   .action-btn:disabled{opacity:.5;cursor:default;}
   .back-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:600;margin-bottom:18px;padding:6px 0;}
   .back-link:hover{text-decoration:underline;}
@@ -310,7 +310,7 @@ if (typeof html2canvas === 'undefined') {
       </div>
       <div class="field" id="field-enddate-wrap" style="display:none;">
         <label>기산 종료일</label>
-        <input type="date" id="endDate" readonly style="background:#f0f0f8;color:var(--ink-soft);cursor:default;">
+        <input type="date" id="endDate" readonly style="background:#eef0f4;color:var(--ink-soft);cursor:default;">
       </div>
     </div>
 
