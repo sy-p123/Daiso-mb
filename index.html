@@ -806,6 +806,7 @@ if (typeof html2canvas === 'undefined') {
     </div>
   </div>
 </div>
+</div>
 
 <!-- ── 소급 안내 탭 ── -->
 <div class="container notice-wrap" id="rsub-notice" style="display:none;">
@@ -1458,6 +1459,7 @@ function calcRetro(){
     subtabs.style.display='';
     tmArea.style.display='none'; // 기본은 소급분 탭
     retroNoticeParty='retro';
+    document.getElementById('r-captureArea').style.display='';
     document.getElementById('r-subtab-retro').classList.add('active');
     document.getElementById('r-subtab-tm').classList.remove('active');
 
@@ -1489,6 +1491,9 @@ function calcRetro(){
   }else{
     subtabs.style.display='none';
     tmArea.style.display='none';
+    // 당월분이 없으면 소급분 영역을 반드시 다시 표시 (이전 탭 상태 초기화)
+    retroNoticeParty='retro';
+    document.getElementById('r-captureArea').style.display='';
   }
 }
 
