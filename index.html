@@ -559,6 +559,10 @@ if (typeof html2canvas === 'undefined') {
         <div class="divider" style="margin:18px 0 16px;"></div>
         <div style="font-size:13.5px;font-weight:800;color:var(--accent);margin-bottom:9px;padding-left:9px;border-left:3px solid var(--accent);">2. 관리비 세금계산서</div>
         <div class="invoice-box">
+          <div class="invoice-month-row" id="n-mgmt-month-row">
+            <div class="invoice-mlabel" id="n-mgmt-issue-label">세금계산서 작성일자</div>
+            <div class="invoice-month" id="n-mgmt-issue"></div>
+          </div>
           <div class="invoice-row"><div class="invoice-key">공급가액</div><div class="invoice-val" id="n-mgmt-supply"></div></div>
           <div class="invoice-row"><div class="invoice-key">부가세액 (10%)</div><div class="invoice-val" id="n-mgmt-vat"></div></div>
           <div class="invoice-row invoice-total-row"><div class="invoice-key">합계 금액<small>공급가액 + 부가세</small></div><div class="invoice-amount" id="n-mgmt-total"></div></div>
@@ -2100,7 +2104,7 @@ function renderChangeNotice(){
   }else{
     const supply=rentSupply+mgmtSupply;
     const vat=Math.round(supply*0.1);
-    fillInvoice(supply, vat, supply+vat);
+    fillInvoice(supply, vat, supply+vat, !!d.mgmt);
   }
 
   // 발행월 (합산 발행 + 발행월 선택 시에만)
@@ -2165,7 +2169,6 @@ function renderTransferNotice(){
      <span class="meta-chip">총 ${d.total}일</span>
      <span class="meta-chip">매매(승계)일 ${d.cdStr}</span>`;
 
-  document.getElementById('n-single-tag').textContent=`${partyName} 정산분`;
   document.getElementById('n-single-dates').textContent=`${party.dates} (${party.days}일)`;
   document.getElementById('n-single-calc').textContent=`${fmt(party.rent)} ÷ ${d.total}일 × ${party.days}일`;
   document.getElementById('n-single-amt').innerHTML=fmt(party.supply)+'<span class="vat-note">(VAT 별도)</span>';
@@ -2180,7 +2183,7 @@ function renderTransferNotice(){
       mgmtBox.innerHTML=`
         ${tSplit ? "" : `<div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>`}
         <div class="period-box after" style="border-left-color:var(--accent-mid);">
-          <div class="period-tag" style="color:var(--accent);">${partyName} 관리비 정산분</div>
+          <div class="period-tag" style="color:var(--accent);">관리비 정산분</div>
           <div class="period-dates">${party.dates} (${party.days}일)</div>
           <div class="period-calc">${fmt(d.mgmt.mb)} ÷ ${d.total}일 × ${party.days}일</div>
           <div class="period-amount" style="color:var(--accent);">${fmt(mSupply)}<span class="vat-note">(VAT 별도)</span></div>
@@ -2191,7 +2194,7 @@ function renderTransferNotice(){
       mgmtBox.innerHTML=`
         ${tSplit ? "" : `<div style="font-size:12px;font-weight:700;color:var(--accent-mid);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent-mid);">고정관리비</div>`}
         <div class="period-box after" style="border-left-color:var(--accent-mid);">
-          <div class="period-tag" style="color:var(--accent);">${partyName} 관리비 정산분</div>
+          <div class="period-tag" style="color:var(--accent);">관리비 정산분</div>
           <div class="period-dates">${party.dates} (${party.days}일)</div>
           <div class="period-calc">${fmt(d.mgmt.mf)} ÷ ${d.total}일 × ${party.days}일</div>
           <div class="period-amount" style="color:var(--accent);">${fmt(mSupply)}<span class="vat-note">(VAT 별도)</span></div>
@@ -2204,12 +2207,14 @@ function renderTransferNotice(){
     document.getElementById('n-rent-label').style.display='none';
   }
 
+  document.getElementById('n-single-tag').textContent = '임대료 정산분';
+
   // 금액 명세: 합산 / 분리
   if(d.mgmt && tSplit){
     fillInvoiceSplit(party.supply, Math.round(party.supply*0.1), mSupply, Math.round(mSupply*0.1));
   }else{
     const sSup=party.supply+mSupply, sVat=Math.round(sSup*0.1);
-    fillInvoice(sSup, sVat, sSup+sVat);
+    fillInvoice(sSup, sVat, sSup+sVat, !!d.mgmt);
   }
 
   // 발행월: 기존=매매일, 신규=제약없음
@@ -2222,6 +2227,15 @@ function renderTransferNotice(){
     mrow.style.display='';
     document.getElementById('n-issuebanner-label').innerHTML=`세금계산서 작성일자<small>매도일 이후로 작성</small>`;
     document.getElementById('n-issuemonth-display').textContent=`${d.cdStr} 이후`;
+  }
+  // 분리 발행 시 관리비 카드에도 동일한 작성일자 표시
+  if(d.mgmt && tSplit){
+    const mr=document.getElementById('n-mgmt-month-row');
+    mr.style.display='';
+    document.getElementById('n-mgmt-issue-label').innerHTML=
+      document.getElementById('n-issuebanner-label').innerHTML;
+    document.getElementById('n-mgmt-issue').textContent=
+      document.getElementById('n-issuemonth-display').textContent;
   }
 
   document.getElementById('n-refrow').innerHTML=d.bas?`<span>근거자료</span>  ${d.bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
@@ -2246,11 +2260,13 @@ function renderTransferNotice(){
   document.getElementById('n-points').innerHTML=pts;
 }
 
-function fillInvoice(supply,vat,tot){
+function fillInvoice(supply,vat,tot,withMgmt){
   document.getElementById('n-countbar').style.display='none';
   document.getElementById('n-sec1-label').style.display='none';
   document.getElementById('n-invoice-split').style.display='none';
-  document.getElementById('n-total-label').innerHTML='합계 금액<small>공급가액 + 부가세</small>';
+  document.getElementById('n-total-label').innerHTML = withMgmt
+    ? '합계 금액 (임대료+관리비)<small>공급가액 + 부가세</small>'
+    : '합계 금액<small>공급가액 + 부가세</small>';
   document.getElementById('n-supply').textContent=fmt(supply);
   document.getElementById('n-vat').textContent=fmt(vat);
   document.getElementById('n-total').textContent=fmt(tot);
@@ -2266,6 +2282,18 @@ function fillInvoiceSplit(rSupply,rVat,mSupply,mVat){
   document.getElementById('n-total').textContent=fmt(rSupply+rVat);
   document.getElementById('n-total-label').innerHTML='합계 금액<small>공급가액 + 부가세</small>';
   // 2번 카드 = 관리비
+  // 2번 카드 = 관리비 (작성일자는 임대료와 동일 기준)
+  const mRow=document.getElementById('n-mgmt-month-row');
+  const rRow=document.getElementById('n-invoice-month-row');
+  if(rRow && getComputedStyle(rRow).display!=='none'){
+    mRow.style.display='';
+    document.getElementById('n-mgmt-issue-label').innerHTML=
+      document.getElementById('n-issuebanner-label').innerHTML;
+    document.getElementById('n-mgmt-issue').textContent=
+      document.getElementById('n-issuemonth-display').textContent;
+  }else{
+    mRow.style.display='none';
+  }
   document.getElementById('n-mgmt-supply').textContent=fmt(mSupply);
   document.getElementById('n-mgmt-vat').textContent=fmt(mVat);
   document.getElementById('n-mgmt-total').textContent=fmt(mSupply+mVat);
