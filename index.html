@@ -243,6 +243,15 @@ if (typeof html2canvas === 'undefined') {
     </div>
     <div class="sc-arrow">→</div>
   </div>
+
+  <div class="start-card" onclick="enterAnnual()">
+    <div class="sc-icon">📅</div>
+    <div class="sc-body">
+      <h3>연간(365일) 기준 정산</h3>
+      <p>연간 금액을 365일(윤년 366일) 기준으로 나누어, 명도일까지 부담하는 일수만큼 지급액을 산출합니다.</p>
+    </div>
+    <div class="sc-arrow">→</div>
+  </div>
 </div>
 </div>
 
@@ -994,6 +1003,106 @@ if (typeof html2canvas === 'undefined') {
 </div>
 </div>
 
+<!-- ===================== 연간(365일) 기준 정산 ===================== -->
+<div class="page" id="page-annual">
+<div class="container" id="asub-calc">
+  <button class="back-link" onclick="goStart()">← 계산 유형 다시 선택</button>
+  <div class="header">
+    <div class="header-eyebrow">Lease Management Tool</div>
+    <h1>연간(365일) 기준 정산</h1>
+    <div class="header-sub">연간 금액을 365일(윤년 366일)로 나누어 명도일까지의 부담 일수만큼 산출합니다</div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">기본 정보</div>
+    <div class="field-grid two">
+      <div class="field">
+        <label>매장명</label>
+        <input type="text" id="a-storeName" placeholder="예) ○○점">
+      </div>
+      <div class="field">
+        <label>근거자료</label>
+        <input type="text" id="a-basis" placeholder="예) 임대차계약서 / 명도 합의서">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">연간 계약 기간</div>
+    <div class="field-grid two">
+      <div class="field">
+        <label>연간 기산 시작일</label>
+        <input type="date" id="a-startDate" onchange="hintAnnualYear()">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">연간 금액이 적용되기 시작하는 날짜입니다.</div>
+      </div>
+      <div class="field">
+        <label>연간 기산 종료일 (만기)</label>
+        <input type="date" id="a-endDate" onchange="hintAnnualYear()">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;" id="a-year-hint">시작일 ~ 만기일의 실제 일수로 365일/366일이 자동 판정됩니다.</div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:16px;">
+      <label>명도일 (정산 종료일)</label>
+      <input type="date" id="a-settleDate">
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.5;">명도일까지 부담하는 것으로 보아 일수를 자동 계산합니다. (명도일 당일 포함)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label" id="a-amt-seclabel">연간 금액 (VAT 별도)</div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>과세 구분</label>
+      <div class="mode-group">
+        <button class="mode-btn active" id="a-tax-1" onclick="setAnnualTax(true)">과세 (부가세 10%)</button>
+        <button class="mode-btn" id="a-tax-2" onclick="setAnnualTax(false)">면세 (부가세 없음)</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:7px;line-height:1.5;" id="a-tax-hint">입력 금액은 공급가액이며, 산출 결과에 부가세 10%가 더해집니다.</div>
+    </div>
+    <div class="field">
+      <label>연간 금액</label>
+      <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 7px;line-height:1.5;">임대료·관리비·보험료 등 연 단위로 약정된 비용을 입력하세요.</div>
+      <div class="won-wrap">
+        <input type="number" id="a-rentYear" placeholder="0" min="0" oninput="updateKor('a-rentYear','a-korRent')">
+        <span class="kor-amount" id="a-korRent"></span>
+      </div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calcAnnual()">연간 일할계산 실행</button>
+  <div class="error-msg" id="a-errMsg"></div>
+
+  <div class="card result-box" id="a-result" style="margin-top:20px;">
+    <div class="section-label">산출 결과</div>
+    <div class="result-meta" id="a-metachips"></div>
+
+    <div class="calc-sec">
+      <div class="period-box after" style="border-left-color:var(--accent);background:var(--accent-light);">
+        <div class="period-tag" style="color:var(--accent);" id="a-rent-tag">지급할 임대료</div>
+        <div class="period-dates" id="a-rent-period"></div>
+        <div class="period-calc" id="a-rent-calc"></div>
+        <div class="period-amount" style="color:var(--accent);" id="a-rent-amt"></div>
+      </div>
+    </div>
+
+    <table class="daily-table" style="margin-top:14px;">
+      <thead><tr><th>구분</th><th style="text-align:right;">금액</th></tr></thead>
+      <tbody id="a-sumBody"></tbody>
+    </table>
+
+    <div class="total-row">
+      <span class="total-label">지급 합계 <span id="a-total-sub" style="font-weight:400;opacity:.75;">(공급가액)</span></span>
+      <span class="total-amount" id="a-totalAmt"></span>
+    </div>
+    <div class="total-row" style="border-top:none;padding-top:0;" id="a-vat-total-row">
+      <span class="total-label" style="font-weight:600;">부가세 포함 합계</span>
+      <span class="total-amount" id="a-totalVatAmt" style="font-size:17px;"></span>
+    </div>
+
+    <div class="ref-row" id="a-refRow" style="margin-top:14px;"></div>
+  </div>
+</div>
+</div>
+
 <script>
 // ===== 계산 유형 =====
 let calcType = 'change'; // 'change' | 'transfer'
@@ -1014,8 +1123,99 @@ function enterMode(type) {
 function goStart() {
   document.getElementById('page-main').classList.remove('active');
   document.getElementById('page-retro').classList.remove('active');
+  document.getElementById('page-annual').classList.remove('active');
   document.getElementById('page-start').classList.add('active');
   window.scrollTo(0,0);
+}
+
+// ===== 연간(365일) 기준 정산 =====
+function enterAnnual(){
+  document.getElementById('page-start').classList.remove('active');
+  document.getElementById('page-annual').classList.add('active');
+  document.getElementById('a-result').style.display='none';
+  document.getElementById('a-errMsg').style.display='none';
+  // 연간 기산 기간 기본값: 올해 1월 1일 ~ 12월 31일
+  const yy=new Date().getFullYear();
+  const sEl=document.getElementById('a-startDate'), eEl=document.getElementById('a-endDate');
+  if(!sEl.value) sEl.value=yy+'-01-01';
+  if(!eEl.value) eEl.value=yy+'-12-31';
+  hintAnnualYear();
+  window.scrollTo(0,0);
+}
+let aTaxable=true;
+function setAnnualTax(t){
+  aTaxable=t;
+  document.getElementById('a-tax-1').classList.toggle('active',t);
+  document.getElementById('a-tax-2').classList.toggle('active',!t);
+  document.getElementById('a-tax-hint').textContent = t
+    ? '입력 금액은 공급가액이며, 산출 결과에 부가세 10%가 더해집니다.'
+    : '면세 항목이므로 부가세 없이 금액 그대로 산출됩니다.';
+  document.getElementById('a-amt-seclabel').textContent = t ? '연간 금액 (VAT 별도)' : '연간 금액 (면세)';
+}
+function ase(msg){const e=document.getElementById('a-errMsg');e.textContent=msg;e.style.display='block';document.getElementById('a-result').style.display='none';}
+function pd(v){const [y,m,d]=v.split('-').map(Number);return new Date(y,m-1,d);}
+function dayGap(a,b){return Math.round((b-a)/86400000)+1;} // 양 끝 포함 일수
+function hintAnnualYear(){
+  const sv=document.getElementById('a-startDate').value;
+  const ev=document.getElementById('a-endDate').value;
+  const h=document.getElementById('a-year-hint');
+  if(!sv||!ev){h.textContent='시작일 ~ 만기일의 실제 일수로 365일/366일이 자동 판정됩니다.';return;}
+  const n=dayGap(pd(sv),pd(ev));
+  if(n<=0){h.textContent='만기일은 시작일보다 뒤여야 합니다.';return;}
+  h.textContent = `연간 총일수 ${n}일` + (n===366?' (윤년 포함)':(n===365?'':' · 365/366일과 달라 입력을 확인해 주세요'));
+}
+function calcAnnual(){
+  document.getElementById('a-errMsg').style.display='none';
+  const sv=document.getElementById('a-startDate').value;
+  const ev=document.getElementById('a-endDate').value;
+  const tv=document.getElementById('a-settleDate').value;
+  const store=document.getElementById('a-storeName').value.trim();
+  const bas=document.getElementById('a-basis').value.trim();
+  const rent=parseFloat(document.getElementById('a-rentYear').value);
+
+  if(!sv) return ase('연간 기산 시작일을 입력해 주세요.');
+  if(!ev) return ase('연간 기산 종료일(만기)을 입력해 주세요.');
+  if(!tv) return ase('명도일을 입력해 주세요.');
+  if(isNaN(rent)||rent<0) return ase('연간 금액을 올바르게 입력해 주세요.');
+
+  const S=pd(sv), E=pd(ev), T=pd(tv);
+  if(E<=S) return ase('연간 기산 종료일은 시작일보다 뒤여야 합니다.');
+  if(T<S) return ase('명도일은 연간 기산 시작일보다 뒤여야 합니다.');
+  if(T>E) return ase('명도일이 만기일을 넘습니다. 날짜를 확인해 주세요.');
+
+  const totalDays=dayGap(S,E);      // 365 또는 366
+  const useDays=dayGap(S,T);        // 사용일수
+  const restDays=totalDays-useDays; // 잔여일수
+  const leap = totalDays===366;
+
+  const supply=Math.round(rent/totalDays*useDays);
+  const vat=aTaxable?Math.round(supply*0.1):0;
+
+  const dsx=d=>ds(d.getFullYear(),d.getMonth()+1,d.getDate());
+  const periodStr=`${dsx(S)} ~ ${dsx(T)}`;
+
+  document.getElementById('a-metachips').innerHTML=
+    `<span class="meta-chip">${store?store+' · ':''}연간 ${totalDays}일 기준${leap?' (윤년)':''}</span>
+     <span class="meta-chip">부담 ${useDays}일 / 잔여 ${restDays}일</span>
+     <span class="meta-chip">계약 ${dsx(S)} ~ ${dsx(E)}</span>
+     <span class="meta-chip">${aTaxable?'과세 항목':'면세 항목'}</span>`;
+
+  document.getElementById('a-rent-tag').textContent='지급할 금액';
+  document.getElementById('a-rent-period').textContent=periodStr+` (${useDays}일)`;
+  document.getElementById('a-rent-calc').textContent=`${fmt(rent)} ÷ ${totalDays}일 × ${useDays}일`;
+  document.getElementById('a-rent-amt').innerHTML=fmt(supply)+`<span class="vat-note">(${aTaxable?'VAT 별도':'면세'})</span>`;
+
+  let rows=`<tr><td>정산 금액 (${useDays}일분)</td><td style="text-align:right;white-space:nowrap;"><strong>${fmt(supply)}</strong></td></tr>`;
+  if(aTaxable) rows+=`<tr><td style="color:var(--ink-soft);">부가세 (10%)</td><td style="text-align:right;white-space:nowrap;color:var(--ink-soft);">${fmt(vat)}</td></tr>`;
+  document.getElementById('a-sumBody').innerHTML=rows;
+  document.getElementById('a-total-sub').textContent = aTaxable ? '(공급가액)' : '(면세)';
+  document.getElementById('a-totalAmt').textContent=fmt(supply);
+  document.getElementById('a-vat-total-row').style.display = aTaxable ? '' : 'none';
+  document.getElementById('a-totalVatAmt').textContent=fmt(supply+vat);
+  document.getElementById('a-refRow').innerHTML=bas?`<span>근거자료</span>  ${bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
+
+  document.getElementById('a-result').style.display='block';
+  document.getElementById('a-result').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ===== 소급 계산 =====
@@ -2098,6 +2298,13 @@ function renderChangeNotice(){
 
   // 금액 명세: 합산 발행(1장) / 분리 발행(임대료·관리비 각 1장)
   const split = d.mgmt && d.mgmtBill==='split';
+  // 발행월 행 표시 여부를 먼저 확정 (분리 발행 카드가 이 상태를 참조)
+  if(d.issueMonthVal && !split){
+    document.getElementById('n-invoice-month-row').style.display='';
+    syncIssuemonthFromCalc();
+  }else{
+    document.getElementById('n-invoice-month-row').style.display='none';
+  }
   if(split){
     const rVat=Math.round(rentSupply*0.1), mVat=Math.round(mgmtSupply*0.1);
     fillInvoiceSplit(rentSupply, rVat, mgmtSupply, mVat);
@@ -2105,14 +2312,6 @@ function renderChangeNotice(){
     const supply=rentSupply+mgmtSupply;
     const vat=Math.round(supply*0.1);
     fillInvoice(supply, vat, supply+vat, !!d.mgmt);
-  }
-
-  // 발행월 (합산 발행 + 발행월 선택 시에만)
-  if(d.issueMonthVal && !split){
-    document.getElementById('n-invoice-month-row').style.display='';
-    syncIssuemonthFromCalc();
-  }else{
-    document.getElementById('n-invoice-month-row').style.display='none';
   }
 
   document.getElementById('n-refrow').innerHTML=d.bas?`<span>근거자료</span>  ${d.bas}`:`<span style="color:var(--rule)">근거자료 미입력</span>`;
